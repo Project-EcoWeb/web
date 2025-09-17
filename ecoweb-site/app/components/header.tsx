@@ -7,7 +7,9 @@ export function Header() {
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <div className="flex items-center space-x-8">
                     <Link href="/" className="flex items-center space-x-2">
-                        <div className="h-8 w-8 rounded-full bg-primary"></div>
+                        <div className="h-8 w-8 rounded-full">
+                            <img src="logo-transparent.png" alt="" />
+                        </div>
                         <span className="text-xl font-bold text-primary">EcoWeb</span>
                     </Link>
 
