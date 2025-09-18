@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "EcoWeb - Transform Waste into Social Impact",
+  title: "EcoWeb",
   description:
     "Connect your reusable materials to social projects and NGOs. Generate ESG impact reports and strengthen your corporate brand.",
   generator: "v0.app",
