@@ -7,7 +7,9 @@ export function Header() {
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <div className="flex items-center space-x-8">
                     <Link href="/" className="flex items-center space-x-2">
-                        <div className="h-8 w-8 rounded-full bg-primary"></div>
+                        <div className="h-8 w-8 rounded-full">
+                            <img src="logo-transparent.png" alt="" />
+                        </div>
                         <span className="text-xl font-bold text-primary">EcoWeb</span>
                     </Link>
 
@@ -16,29 +18,29 @@ export function Header() {
                             href="#solutions"
                             className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                         >
-                            Solutions
+                            Soluções
                         </Link>
                         <Link href="#impact" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                            Impact
+                            Impacto
                         </Link>
                         <Link
                             href="#success-stories"
                             className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                         >
-                            Success Stories
+                            Histórias de sucesso
                         </Link>
                         <Link href="#contact" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                            Contact
+                            Contato
                         </Link>
                     </nav>
                 </div>
 
                 <div className="flex items-center space-x-4">
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href="/login">Login</Link>
+                        <Link href="/login">Entrar</Link>
                     </Button>
                     <Button size="sm" asChild>
-                        <Link href="/register">Register Company</Link>
+                        <Link href="/register">Cadastrar</Link>
                     </Button>
                 </div>
             </div>
