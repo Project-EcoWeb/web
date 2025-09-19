@@ -59,7 +59,7 @@ export function ImpactStats() {
         {
             icon: Recycle,
             value: stats.wasteReduced,
-            label: "Kg de resíduos reciclados",
+            label: "Kg de resíduos",
             suffix: "+",
         },
         {
