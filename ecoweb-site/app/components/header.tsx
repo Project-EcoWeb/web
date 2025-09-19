@@ -23,15 +23,6 @@ export function Header() {
                         <Link href="#impact" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                             Impacto
                         </Link>
-                        <Link
-                            href="#success-stories"
-                            className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                        >
-                            Histórias de sucesso
-                        </Link>
-                        <Link href="#contact" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                            Contato
-                        </Link>
                     </nav>
                 </div>
 
