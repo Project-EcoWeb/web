@@ -1,46 +1,29 @@
 import type React from "react"
-import {
-    SidebarProvider,
-    SidebarInset,
-    Sidebar,
-    SidebarContent,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuItem,
-    SidebarMenuButton,
-    SidebarFooter,
-    SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { BarChart3, Package, Plus, Home, Settings, LogOut } from "lucide-react"
+import { Package, MessageCircle, BarChart3, Settings, LogOut, User } from "lucide-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navigation = [
     {
-        title: "Dashboard",
+        title: "Materiais",
         url: "/dashboard",
-        icon: Home,
-    },
-    {
-        title: "Meus Materiais",
-        url: "/dashboard/materials",
         icon: Package,
     },
     {
-        title: "Cadastrar Material",
-        url: "/dashboard/materials/new",
-        icon: Plus,
+        title: "Mensagens",
+        url: "/dashboard/inbox",
+        icon: MessageCircle,
     },
     {
-        title: "Relatórios de Impacto",
+        title: "Relatórios",
         url: "/dashboard/reports",
         icon: BarChart3,
     },
@@ -52,74 +35,71 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     return (
-        <SidebarProvider>
-            <div className="flex min-h-screen w-full">
-                <Sidebar>
-                    <SidebarHeader className="border-b border-sidebar-border">
-                        <div className="flex items-center gap-2 px-4 py-2">
+        <div className="min-h-screen bg-background">
+            <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="container flex h-16 items-center justify-between px-6">
+                    {/* Logo and Brand */}
+                    <div className="flex items-center gap-6">
+                        <Link href="/dashboard" className="flex items-center gap-2">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                 <Package className="h-4 w-4" />
                             </div>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">EcoWeb</span>
-                                <span className="truncate text-xs text-muted-foreground">Painel Empresarial</span>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-semibold">EcoWeb</span>
+                                <span className="text-xs text-muted-foreground">Painel Empresarial</span>
                             </div>
-                        </div>
-                    </SidebarHeader>
-                    <SidebarContent>
-                        <SidebarMenu>
+                        </Link>
+
+                        {/* Navigation Tabs */}
+                        <nav className="hidden md:flex items-center gap-1">
                             {navigation.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url} className="flex items-center gap-2">
-                                            <item.icon className="h-4 w-4" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+                                <Button
+                                    key={item.title}
+                                    variant="ghost"
+                                    size="sm"
+                                    asChild
+                                    className="text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                >
+                                    <Link href={item.url} className="flex items-center gap-2">
+                                        <item.icon className="h-4 w-4" />
+                                        <span>{item.title}</span>
+                                    </Link>
+                                </Button>
                             ))}
-                        </SidebarMenu>
-                    </SidebarContent>
-                    <SidebarFooter className="border-t border-sidebar-border">
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
-                                    <Link href="/dashboard/settings" className="flex items-center gap-2">
-                                        <Settings className="h-4 w-4" />
-                                        <span>Configurações</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
-                                    <Link href="/login" className="flex items-center gap-2 text-red-600 hover:text-red-700">
-                                        <LogOut className="h-4 w-4" />
-                                        <span>Sair</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarFooter>
-                </Sidebar>
-                <SidebarInset className="flex-1">
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="mr-2 h-4" />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Painel de Controle</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                    </header>
-                    <main className="flex-1 p-4">{children}</main>
-                </SidebarInset>
-            </div>
-        </SidebarProvider>
+                        </nav>
+                    </div>
+
+                    {/* User Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="bg-primary text-primary-foreground">
+                                        <User className="h-4 w-4" />
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard/settings" className="flex items-center gap-2">
+                                    <Settings className="h-4 w-4" />
+                                    <span>Configurações</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/login" className="flex items-center gap-2 text-red-400 hover:text-red-300">
+                                    <LogOut className="h-4 w-4" />
+                                    <span>Sair</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </header>
+
+            <main className="container mx-auto px-6 py-8">{children}</main>
+        </div>
     )
 }
