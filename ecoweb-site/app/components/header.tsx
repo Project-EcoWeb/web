@@ -13,17 +13,6 @@ export function Header() {
                         <span className="text-xl font-bold text-primary">EcoWeb</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center space-x-6">
-                        <Link
-                            href="#solutions"
-                            className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                        >
-                            Soluções
-                        </Link>
-                        <Link href="#impact" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                            Impacto
-                        </Link>
-                    </nav>
                 </div>
 
                 <div className="flex items-center space-x-4">
