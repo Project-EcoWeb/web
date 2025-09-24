@@ -10,7 +10,7 @@ export function HeroSection() {
                     {/* Main Headline */}
                     <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
                         Transforme a sua empresa <span className="text-primary">gestão de resíduos</span> em um{" "}
-                        <span className="text-secondary">impacto social positivo</span>
+                        <span className="text-highlight">impacto social positivo</span>
                     </h1>
 
                     {/* Subtitle */}

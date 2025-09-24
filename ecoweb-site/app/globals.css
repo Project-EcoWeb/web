@@ -7,15 +7,15 @@
   /* Updated to modern dark theme inspired by Vercel design */
   --background: oklch(1 0 0);
   /* Very dark background #171717 */
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.35 0 0);
   /* Almost white text */
   --card: oklch(1 0 0);
   /* Dark card background #1f1f1f */
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.25 0 0);
   /* White text on cards */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.35 0 0);
+  --primary: oklch(0.35 0.08 195);
   /* Bright cyan accent #22d3ee */
   --primary-foreground: oklch(0.985 0 0);
   /* Dark text on primary */
@@ -23,13 +23,13 @@
   /* Slightly lighter dark #2a2a2a */
   --secondary-foreground: oklch(0.205 0 0);
   /* White text on secondary */
-  --muted: oklch(0.97 0 0);
+  --muted: oklch(0.99 0.01 60);
   /* Muted dark background #262626 */
   --muted-foreground: oklch(0.556 0 0);
   /* Gray text #999999 */
-  --accent: oklch(0.97 0 0);
+  --accent: oklch(0.65 0.15 65);
   /* Accent background */
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   /* Red for errors */
   --destructive-foreground: oklch(0.577 0.245 27.325);
@@ -54,6 +54,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --highlight: oklch(0.65 0.15 65);
 }
 
 .dark {
@@ -131,6 +132,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-highlight: var(--highlight);
 }
 
 @layer base {
