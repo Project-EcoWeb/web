@@ -21,24 +21,14 @@ export function Footer() {
                         <h3 className="font-semibold text-foreground mb-4">Soluções</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li>
-                                <Link href="#solutions" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Gestão de Resíduos
-                                </Link>
+                                </span>
                             </li>
                             <li>
-                                <Link href="#solutions" className="hover:text-primary transition-colors">
-                                    Relatórios
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#solutions" className="hover:text-primary transition-colors">
-                                    Análise de impacto
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#solutions" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Aprimoramento da marca
-                                </Link>
+                                </span>
                             </li>
                         </ul>
                     </div>
@@ -47,24 +37,19 @@ export function Footer() {
                         <h3 className="font-semibold text-foreground mb-4">Empresa</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li>
-                                <Link href="/about" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Sobre nós
-                                </Link>
+                                </span>
                             </li>
                             <li>
-                                <Link href="#success-stories" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Histórias de sucesso
-                                </Link>
+                                </span>
                             </li>
                             <li>
-                                <Link href="/careers" className="hover:text-primary transition-colors">
-                                    Carreiras
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#contact" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Contato
-                                </Link>
+                                </span>
                             </li>
                         </ul>
                     </div>
@@ -73,19 +58,19 @@ export function Footer() {
                         <h3 className="font-semibold text-foreground mb-4">Jurídico</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li>
-                                <Link href="/privacy" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Política de Privacidade
-                                </Link>
+                                </span>
                             </li>
                             <li>
-                                <Link href="/terms" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Termos de Serviço
-                                </Link>
+                                </span>
                             </li>
                             <li>
-                                <Link href="/security" className="hover:text-primary transition-colors">
+                                <span className="hover:text-primary transition-colors">
                                     Segurança
-                                </Link>
+                                </span>
                             </li>
                         </ul>
                     </div>
