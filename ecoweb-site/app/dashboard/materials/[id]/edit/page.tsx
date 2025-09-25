@@ -75,7 +75,7 @@ export default function EditMaterialPage() {
                     toast.error("Erro", {
                         description: "Material não encontrado",
                     })
-                    router.push("/dashboard/materials")
+                    router.push("/dashboard")
                 }
             } catch (error) {
                 toast.error("Erro", {
@@ -182,9 +182,9 @@ export default function EditMaterialPage() {
                 toast.success("Sucesso", {
                     description: "Material atualizado com sucesso!",
                 })
-                router.push("/dashboard/materials")
+                router.push("/dashboard")
             } else {
-                toast.success("Sucesso", {
+                toast.error("Erro", {
                     description: data.error || "Não foi possível atualizar o material",
                 })
             }
@@ -207,208 +207,194 @@ export default function EditMaterialPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href="/dashboard/materials">
+                    <Link href="/dashboard">
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Voltar
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Editar Material</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Editando: {form.nome}</h1>
                     <p className="text-muted-foreground">Atualize as informações do seu material</p>
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-                <div className="md:col-span-2 space-y-6">
-                    {/* Basic Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Informações Básicas</CardTitle>
-                            <CardDescription>Dados essenciais sobre o material</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="nome">Nome do Material *</Label>
-                                    <Input
-                                        id="nome"
-                                        placeholder="Ex: Sobra de Paletes PBR"
-                                        value={form.nome}
-                                        onChange={(e) => handleInputChange("nome", e.target.value)}
-                                        className={errors.nome ? "border-red-500" : ""}
-                                    />
-                                    {errors.nome && <p className="text-sm text-red-500">{errors.nome}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="categoria">Categoria *</Label>
-                                    <Select value={form.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
-                                        <SelectTrigger className={errors.categoria ? "border-red-500" : ""}>
-                                            <SelectValue placeholder="Selecione uma categoria" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categorias.map((categoria) => (
-                                                <SelectItem key={categoria} value={categoria}>
-                                                    {categoria}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.categoria && <p className="text-sm text-red-500">{errors.categoria}</p>}
-                                </div>
-                            </div>
-
+            <div className="max-w-2xl mx-auto space-y-6">
+                {/* Basic Information */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Informações do Material</CardTitle>
+                        <CardDescription>Atualize os dados essenciais sobre o material</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="descricao">Descrição Detalhada *</Label>
-                                <Textarea
-                                    id="descricao"
-                                    placeholder="Descreva o material, sua condição, dimensões, possíveis usos..."
-                                    value={form.descricao}
-                                    onChange={(e) => handleInputChange("descricao", e.target.value)}
-                                    rows={4}
-                                    className={errors.descricao ? "border-red-500" : ""}
-                                />
-                                {errors.descricao && <p className="text-sm text-red-500">{errors.descricao}</p>}
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="quantidade">Quantidade *</Label>
-                                    <Input
-                                        id="quantidade"
-                                        placeholder="Ex: 100"
-                                        value={form.quantidade}
-                                        onChange={(e) => handleInputChange("quantidade", e.target.value)}
-                                        className={errors.quantidade ? "border-red-500" : ""}
-                                    />
-                                    {errors.quantidade && <p className="text-sm text-red-500">{errors.quantidade}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="unidadeMedida">Unidade de Medida</Label>
-                                    <Select
-                                        value={form.unidadeMedida}
-                                        onValueChange={(value) => handleInputChange("unidadeMedida", value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {unidadesMedida.map((unidade) => (
-                                                <SelectItem key={unidade} value={unidade}>
-                                                    {unidade}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Photos */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Fotos do Material</CardTitle>
-                            <CardDescription>Adicione até 5 fotos (máximo 5MB cada)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-3">
-                                {form.fotos.map((file, index) => (
-                                    <div key={index} className="relative">
-                                        <div className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 flex items-center justify-center">
-                                            <img
-                                                src={typeof file === "string" ? file : URL.createObjectURL(file)}
-                                                alt={`Preview ${index + 1}`}
-                                                className="w-full h-full object-cover rounded-lg"
-                                            />
-                                        </div>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                                            onClick={() => removePhoto(index)}
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-
-                                {form.fotos.length < 5 && (
-                                    <div
-                                        className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/75 transition-colors"
-                                        onClick={() => fileInputRef.current?.click()}
-                                    >
-                                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                        <p className="text-sm text-muted-foreground text-center">Clique para adicionar foto</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={handleFileUpload}
-                            />
-
-                            {errors.fotos && <p className="text-sm text-red-500">{errors.fotos}</p>}
-                        </CardContent>
-                    </Card>
-
-                    {/* Logistics */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Logística e Contato</CardTitle>
-                            <CardDescription>Informações para retirada do material</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="endereco">Endereço de Retirada *</Label>
+                                <Label htmlFor="nome">Nome do Material *</Label>
                                 <Input
-                                    id="endereco"
-                                    placeholder="Ex: Rua das Flores, 123 - São Paulo, SP"
-                                    value={form.endereco}
-                                    onChange={(e) => handleInputChange("endereco", e.target.value)}
-                                    className={errors.endereco ? "border-red-500" : ""}
+                                    id="nome"
+                                    placeholder="Ex: Sobra de Paletes PBR"
+                                    value={form.nome}
+                                    onChange={(e) => handleInputChange("nome", e.target.value)}
+                                    className={errors.nome ? "border-red-500" : ""}
                                 />
-                                {errors.endereco && <p className="text-sm text-red-500">{errors.endereco}</p>}
+                                {errors.nome && <p className="text-sm text-red-500">{errors.nome}</p>}
                             </div>
-
                             <div className="space-y-2">
-                                <Label htmlFor="instrucoes">Instruções para Retirada</Label>
-                                <Textarea
-                                    id="instrucoes"
-                                    placeholder="Horários disponíveis, pessoa de contato, instruções especiais..."
-                                    value={form.instrucoes}
-                                    onChange={(e) => handleInputChange("instrucoes", e.target.value)}
-                                    rows={3}
-                                />
+                                <Label htmlFor="categoria">Categoria *</Label>
+                                <Select value={form.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
+                                    <SelectTrigger className={errors.categoria ? "border-red-500" : ""}>
+                                        <SelectValue placeholder="Selecione uma categoria" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categorias.map((categoria) => (
+                                            <SelectItem key={categoria} value={categoria}>
+                                                {categoria}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.categoria && <p className="text-sm text-red-500">{errors.categoria}</p>}
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
 
-                {/* Actions Sidebar */}
-                <div className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Ações</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
-                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Salvar Alterações
-                            </Button>
+                        <div className="space-y-2">
+                            <Label htmlFor="descricao">Descrição *</Label>
+                            <Textarea
+                                id="descricao"
+                                placeholder="Descreva o material, sua condição, dimensões e possíveis usos..."
+                                value={form.descricao}
+                                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                                rows={4}
+                                className={errors.descricao ? "border-red-500" : ""}
+                            />
+                            {errors.descricao && <p className="text-sm text-red-500">{errors.descricao}</p>}
+                        </div>
 
-                            <Button variant="ghost" asChild className="w-full">
-                                <Link href="/dashboard/materials">Cancelar</Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="quantidade">Quantidade *</Label>
+                                <Input
+                                    id="quantidade"
+                                    placeholder="Ex: 100"
+                                    value={form.quantidade}
+                                    onChange={(e) => handleInputChange("quantidade", e.target.value)}
+                                    className={errors.quantidade ? "border-red-500" : ""}
+                                />
+                                {errors.quantidade && <p className="text-sm text-red-500">{errors.quantidade}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="unidadeMedida">Unidade</Label>
+                                <Select value={form.unidadeMedida} onValueChange={(value) => handleInputChange("unidadeMedida", value)}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {unidadesMedida.map((unidade) => (
+                                            <SelectItem key={unidade} value={unidade}>
+                                                {unidade}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Photos */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Fotos do Material *</CardTitle>
+                        <CardDescription>Atualize as fotos (máximo 5MB cada)</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            {form.fotos.map((file, index) => (
+                                <div key={index} className="relative">
+                                    <div className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 flex items-center justify-center">
+                                        <img
+                                            src={typeof file === "string" ? file : URL.createObjectURL(file)}
+                                            alt={`Preview ${index + 1}`}
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                        onClick={() => removePhoto(index)}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ))}
+
+                            {form.fotos.length < 5 && (
+                                <div
+                                    className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/75 transition-colors"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                                    <p className="text-sm text-muted-foreground text-center">Clique para adicionar foto</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleFileUpload}
+                        />
+
+                        {errors.fotos && <p className="text-sm text-red-500">{errors.fotos}</p>}
+                    </CardContent>
+                </Card>
+
+                {/* Pickup Information */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Informações de Retirada</CardTitle>
+                        <CardDescription>Atualize onde e como o material pode ser retirado</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="endereco">Endereço de Retirada *</Label>
+                            <Input
+                                id="endereco"
+                                placeholder="Ex: Rua das Flores, 123 - São Paulo, SP"
+                                value={form.endereco}
+                                onChange={(e) => handleInputChange("endereco", e.target.value)}
+                                className={errors.endereco ? "border-red-500" : ""}
+                            />
+                            {errors.endereco && <p className="text-sm text-red-500">{errors.endereco}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="instrucoes">Instruções para Retirada</Label>
+                            <Textarea
+                                id="instrucoes"
+                                placeholder="Horários disponíveis, pessoa de contato, instruções especiais..."
+                                value={form.instrucoes}
+                                onChange={(e) => handleInputChange("instrucoes", e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="flex gap-4">
+                    <Button onClick={handleSubmit} disabled={loading} className="flex-1" size="lg">
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Salvar Alterações
+                    </Button>
+
+                    <Button variant="outline" asChild className="flex-1 bg-transparent" size="lg">
+                        <Link href="/dashboard">Cancelar</Link>
+                    </Button>
                 </div>
             </div>
         </div>
