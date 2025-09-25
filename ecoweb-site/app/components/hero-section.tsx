@@ -22,7 +22,7 @@ export function HeroSection() {
                     {/* Primary CTAs */}
                     <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
                         <Button variant="outline" size="lg" className="text-base px-8 py-3 bg-transparent" asChild>
-                            <Link href="/register-material">
+                            <Link href="/dashboard/materials/new">
                                 Cadastre novo Material
                                 <Play className="ml-2 h-4 w-4" />
                             </Link>
