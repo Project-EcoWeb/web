@@ -1,15 +1,15 @@
 import type React from "react"
 import { Package, MessageCircle, BarChart3, Settings, LogOut, User } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "components/ui/button"
+import { Avatar, AvatarFallback } from "components/ui/avatar"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "components/ui/dropdown-menu"
 
 const navigation = [
     {

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card"
+import { Button } from "components/ui/button"
+import { Badge } from "components/ui/badge"
+import { Separator } from "components/ui/separator"
+import { Dialog, DialogContent, DialogTrigger } from "components/ui/dialog"
 import {
     ArrowLeft,
     Edit,
@@ -72,7 +72,7 @@ export default function MaterialDetailPage() {
                 router.push("/dashboard")
             }
         } catch (error) {
-            toast.error("Erro",{
+            toast.error("Erro", {
                 description: "Erro ao carregar material",
             })
             router.push("/dashboard")
@@ -92,15 +92,15 @@ export default function MaterialDetailPage() {
             description: "O link do material foi copiado para a área de transferência",
         })
     }
-    
+
     if (!material) {
         return null
     }
-    
+
     const nextImage = () => {
         setSelectedImageIndex((prev) => (prev + 1) % material.fotos.length)
     }
-    
+
 
     const prevImage = () => {
         setSelectedImageIndex((prev) => (prev - 1 + material.fotos.length) % material.fotos.length)
@@ -243,8 +243,8 @@ export default function MaterialDetailPage() {
                                                             key={index}
                                                             onClick={() => setSelectedImageIndex(index)}
                                                             className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${selectedImageIndex === index
-                                                                    ? "border-primary"
-                                                                    : "border-transparent hover:border-border"
+                                                                ? "border-primary"
+                                                                : "border-transparent hover:border-border"
                                                                 }`}
                                                         >
                                                             <img
