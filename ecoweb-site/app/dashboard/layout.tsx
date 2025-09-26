@@ -41,8 +41,9 @@ export default function DashboardLayout({
                     {/* Logo and Brand */}
                     <div className="flex items-center gap-6">
                         <Link href="/dashboard" className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg ">
                                 <Package className="h-4 w-4" />
+                                <img src="/logo-transparent.png" alt="" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-sm font-semibold">EcoWeb</span>
