@@ -9,26 +9,39 @@ import { Input } from "components/ui/input"
 import { Label } from "components/ui/label"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/context/authContext"
+import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
+    const { login } = useAuth()
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    
     const [formData, setFormData] = useState({
-        email: "",
+        emailOrCnpj: "",
         password: "",
     })
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
+        setError(null)
 
-        // Simulate login process
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        try {
+            await login(formData)
 
-        // In a real app, this would authenticate with your backend
-        console.log("Login attempt:", formData)
-        alert("Login functionality would be implemented here")
+            const callbackUrl = searchParams.get('callbackUrl') || '/dashboard/materials'
+            router.push(callbackUrl)
 
-        setIsLoading(false)
+        } catch (err) {
+            setError("Falha no login. Verifique seu e-mail e senha.")
+            console.error(err)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,12 +78,12 @@ export default function LoginPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email Corporativo/CNPJ</Label>
+                            <Label htmlFor="emailOrCnpj">Email Corporativo/CNPJ</Label>
                             <Input
-                                id="email"
-                                name="email"
-                                type="email"
-                                value={formData.email}
+                                id="emailOrCnpj"
+                                name="emailOrCnpj"
+                                type="emailOrCnpj"
+                                value={formData.emailOrCnpj}
                                 onChange={handleChange}
                                 required
                                 placeholder="seu.email@empresa.com"
