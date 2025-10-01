@@ -7,19 +7,25 @@ import { Card } from "components/ui/card"
 import { Button } from "components/ui/button"
 import { Input } from "components/ui/input"
 import { Label } from "components/ui/label"
-import { Textarea } from "components/ui/textarea"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+import { registerCompany } from "../services/companyService"
 
 export default function RegisterPage() {
+
+    const router = useRouter();
+    const [error, setError] = useState<string | null>(null);
+    
     const [formData, setFormData] = useState({
-        companyName: "",
+        name: "",
         cnpj: "",
-        contactName: "",
+        responsibleName: "",
         email: "",
         phone: "",
-        address: "",
-        description: "",
+        cep: "",
+        location: "",
         password: "",
         confirmPassword: "",
     })
@@ -27,25 +33,34 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setIsLoading(true)
+        setError(null);
 
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match")
-            setIsLoading(false)
-            return
+            alert("Passwords do not match");
+            setError("Passwords do not match");
+            return;
         }
 
-        // Simulate registration process
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        setIsLoading(true);
 
-        // In a real app, this would register with your backend
-        console.log("Registration attempt:", formData)
-        alert("Registration functionality would be implemented here")
+        try {
+            const { confirmPassword, ...companyData } = formData;
 
-        setIsLoading(false)
+            const response = await registerCompany(companyData);
+            
+            if (response.status === 201) {
+                alert("Instituição cadastrada com sucesso!");
+                router.push("/login");
+            }
+
+        } catch (err: any) {
+            setError(err.message || "Ocorreu um erro. Tente novamente.");
+        } finally {
+            setIsLoading(false)
+        }
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
@@ -80,11 +95,11 @@ export default function RegisterPage() {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="companyName">Nome instituição *</Label>
+                                <Label htmlFor="name">Nome instituição *</Label>
                                 <Input
-                                    id="companyName"
-                                    name="companyName"
-                                    value={formData.companyName}
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
                                     onChange={handleChange}
                                     required
                                     placeholder="Sua instituição Inc."
@@ -105,11 +120,11 @@ export default function RegisterPage() {
 
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="contactName">Nome de contato *</Label>
+                                <Label htmlFor="responsibleName">Nome de contato *</Label>
                                 <Input
-                                    id="contactName"
-                                    name="contactName"
-                                    value={formData.contactName}
+                                    id="responsibleName"
+                                    name="responsibleName"
+                                    value={formData.responsibleName}
                                     onChange={handleChange}
                                     required
                                     placeholder="João Silva"
@@ -139,30 +154,31 @@ export default function RegisterPage() {
                                     value={formData.phone}
                                     onChange={handleChange}
                                     required
-                                    placeholder="(DD)XXXXX-XXXX"
+                                    placeholder="(DD) XXXXX-XXXX"
                                 />
                             </div>
+                            {/* 2. Campo de CEP adicionado aqui */}
                             <div className="space-y-2">
-                                <Label htmlFor="address">Endereço</Label>
+                                <Label htmlFor="cep">CEP</Label>
                                 <Input
-                                    id="address"
-                                    name="address"
-                                    value={formData.address}
+                                    id="cep"
+                                    name="cep"
+                                    value={formData.cep}
                                     onChange={handleChange}
-                                    placeholder=" Rua X - 124, Bairro, Cidade, Estado"
+                                    placeholder="00000-000"
                                 />
                             </div>
                         </div>
 
+                        {/* 3. Campo de endereço agora ocupa a linha inteira e o de descrição foi removido */}
                         <div className="space-y-2">
-                            <Label htmlFor="description">Descrição da Empresa</Label>
-                            <Textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
+                            <Label htmlFor="location">Endereço</Label>
+                            <Input
+                                id="location"
+                                name="location"
+                                value={formData.location}
                                 onChange={handleChange}
-                                placeholder="Breve descrição da sua empresa ..."
-                                rows={3}
+                                placeholder="Rua X, 123 - Bairro, Cidade - Estado"
                             />
                         </div>
 
