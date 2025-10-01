@@ -24,3 +24,21 @@ export async function registerCompany(company: CompanyData) {
         }
     }
 }
+
+export type LoginData = {
+    emailOrCnpj: string,
+    password: String
+};
+
+export async function loginCompany(company: LoginData) {
+    try {
+        const response = await api.post("/auth/login?q=company", company);
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha no login');
+        } else {
+            throw new Error('Erro na conexão com servidor');
+        }
+    }
+}
