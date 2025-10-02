@@ -12,35 +12,39 @@ import { Upload, X, Send, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef } from "react"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { useAuth } from "@/context/authContext"
+import { register as registerMaterial } from "@/services/materialServices"
 
 interface MaterialForm {
-    nome: string
-    categoria: string
-    descricao: string
-    quantidade: string
-    unidadeMedida: string
-    endereco: string
-    instrucoes: string
+    name: string,
+    description: string,
+    location: string,
+    quantity: number,
+    category: string,
+    unitOfMeasure: string,
+    instructions: string,
     fotos: File[]
 }
 
 const categorias = ["Madeira", "Plástico", "Metal", "Tecido", "Eletrônicos", "Papel", "Vidro", "Borracha", "Outros"]
 
-const unidadesMedida = ["kg", "ton", "peças", "metros", "m²", "m³", "litros", "unidades"]
+const unitOfMeasure = ["kg", "ton", "peças", "metros", "m²", "m³", "litros", "unidades"]
 
 export default function NewMaterialPage() {
+    const userpathname = usePathname();
     const router = useRouter()
+    const { token } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState<MaterialForm>({
-        nome: "",
-        categoria: "",
-        descricao: "",
-        quantidade: "",
-        unidadeMedida: "kg",
-        endereco: "",
-        instrucoes: "",
+        name: "",
+        category: "",
+        description: "",
+        quantity: 0,
+        unitOfMeasure: "kg",
+        location: "",
+        instructions: "",
         fotos: [],
     })
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -92,11 +96,15 @@ export default function NewMaterialPage() {
     const validateForm = () => {
         const newErrors: Record<string, string> = {}
 
-        if (!form.nome.trim()) newErrors.nome = "Nome do material é obrigatório"
-        if (!form.categoria) newErrors.categoria = "Categoria é obrigatória"
-        if (!form.descricao.trim()) newErrors.descricao = "Descrição é obrigatória"
-        if (!form.quantidade.trim()) newErrors.quantidade = "Quantidade é obrigatória"
-        if (!form.endereco.trim()) newErrors.endereco = "Endereço de retirada é obrigatório"
+        if (!form.name.trim()) newErrors.name = "Nome do material é obrigatório"
+        if (!form.category) newErrors.category = "Categoria é obrigatória"
+        if (!form.description.trim()) newErrors.description = "Descrição é obrigatória"
+        if (form.quantity === null || form.quantity === undefined || form.quantity <= 0) {
+            newErrors.quantity = "Quantidade é obrigatória e não pode ser negativa"
+        } else if (isNaN(Number(form.quantity))) {
+            newErrors.quantity = "Quantidade deve ser um número válido"
+        } 
+        if (!form.location.trim()) newErrors.location = "Endereço de retirada é obrigatório"
         if (form.fotos.length === 0) newErrors.fotos = "Pelo menos uma foto é obrigatória"
 
         setErrors(newErrors)
@@ -111,43 +119,60 @@ export default function NewMaterialPage() {
             return
         }
 
+        if (!token) {
+            toast.error("Erro de Autenticação", {
+                description: "Você não está autenticado. Faça login novamente.",
+            })
+            router.push('/login');
+            return;
+        }
+
         setLoading(true)
 
         try {
-            // In a real app, you would upload files to a storage service first
-            const formData = {
-                ...form,
-                quantidade: `${form.quantidade} ${form.unidadeMedida}`,
-                status: "Publicado",
-                fotos: form.fotos.map((file) => `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(file.name)}`),
+
+            const materialData = {
+                name: form.name,
+                category: form.category,
+                description: form.description,
+                quantity: Number(form.quantity),
+                unitOfMeasure: form.unitOfMeasure,
+                location: form.location,
+                instructions: form.instructions,
+                photos: null,
             }
 
-            const response = await fetch("/api/empresa/materiais", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            })
+            const response = await registerMaterial(materialData, token)
 
-            const data = await response.json()
+            if (response.status === 201 || response.status === 200) {
+                alert("Material publicado com sucesso!");
+                // toast.success("Sucesso", {
+                //     description: "Material publicado com sucesso!",
+                //     onAutoClose: () => {
+                //         router.push('/dashboard/materials')
+                //     }
+                // });
 
-            if (data.success) {
-                toast.success("Sucesso", {
-                    description: "Material publicado com sucesso!",
-                })
-                router.push("/dashboard")
+                router.push('/dashboard/materials');
             } else {
+                setLoading(false);
                 toast.error("Erro", {
-                    description: data.error || "Não foi possível salvar o material",
+                    description: response.data.message || "Não foi possível salvar o material",
                 })
             }
-        } catch (error) {
+        } catch (error: any) {
+            setLoading(false);
             toast.error("Erro", {
-                description: "Erro de conexão ao salvar material",
+                description: error.message || "Ocorreu um erro inesperado.",
             })
         } finally {
-            setLoading(false)
+            if (userpathname === '/dashboard/materials/new') {
+                setLoading(false);
+            }
         }
+
     }
+
 
     return (
         <div className="space-y-6">
@@ -174,67 +199,67 @@ export default function NewMaterialPage() {
                     <CardContent className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="nome">Nome do Material *</Label>
+                                <Label htmlFor="name">Nome do Material *</Label>
                                 <Input
-                                    id="nome"
+                                    id="name"
                                     placeholder="Ex: Sobra de Paletes PBR"
-                                    value={form.nome}
-                                    onChange={(e) => handleInputChange("nome", e.target.value)}
-                                    className={errors.nome ? "border-red-500" : ""}
+                                    value={form.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
+                                    className={errors.name ? "border-red-500" : ""}
                                 />
-                                {errors.nome && <p className="text-sm text-red-500">{errors.nome}</p>}
+                                {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="categoria">Categoria *</Label>
-                                <Select value={form.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
-                                    <SelectTrigger className={errors.categoria ? "border-red-500" : ""}>
+                                <Label htmlFor="category">Categoria *</Label>
+                                <Select value={form.category} onValueChange={(value) => handleInputChange("category", value)}>
+                                    <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                                         <SelectValue placeholder="Selecione uma categoria" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categorias.map((categoria) => (
-                                            <SelectItem key={categoria} value={categoria}>
-                                                {categoria}
+                                        {categorias.map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.categoria && <p className="text-sm text-red-500">{errors.categoria}</p>}
+                                {errors.category && <p className="text-sm text-red-500">{errors.category}</p>}
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="descricao">Descrição *</Label>
+                            <Label htmlFor="description">Descrição *</Label>
                             <Textarea
-                                id="descricao"
+                                id="description"
                                 placeholder="Descreva o material, sua condição, dimensões e possíveis usos..."
-                                value={form.descricao}
-                                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                                value={form.description}
+                                onChange={(e) => handleInputChange("description", e.target.value)}
                                 rows={4}
-                                className={errors.descricao ? "border-red-500" : ""}
+                                className={errors.description ? "border-red-500" : ""}
                             />
-                            {errors.descricao && <p className="text-sm text-red-500">{errors.descricao}</p>}
+                            {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="quantidade">Quantidade *</Label>
+                                <Label htmlFor="quantity">Quantidade *</Label>
                                 <Input
-                                    id="quantidade"
+                                    id="quantity"
                                     placeholder="Ex: 100"
-                                    value={form.quantidade}
-                                    onChange={(e) => handleInputChange("quantidade", e.target.value)}
+                                    value={form.quantity}
+                                    onChange={(e) => handleInputChange("quantity", e.target.value)}
                                     className={errors.quantidade ? "border-red-500" : ""}
                                 />
-                                {errors.quantidade && <p className="text-sm text-red-500">{errors.quantidade}</p>}
+                                {errors.quantity && <p className="text-sm text-red-500">{errors.quantity}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="unidadeMedida">Unidade</Label>
-                                <Select value={form.unidadeMedida} onValueChange={(value) => handleInputChange("unidadeMedida", value)}>
+                                <Label htmlFor="unitOfMeasure">Unidade</Label>
+                                <Select value={form.unitOfMeasure} onValueChange={(value) => handleInputChange("unitOfMeasure", value)}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {unidadesMedida.map((unidade) => (
+                                        {unitOfMeasure.map((unidade) => (
                                             <SelectItem key={unidade} value={unidade}>
                                                 {unidade}
                                             </SelectItem>
@@ -306,24 +331,24 @@ export default function NewMaterialPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="endereco">Endereço de Retirada *</Label>
+                            <Label htmlFor="location">Endereço de Retirada *</Label>
                             <Input
-                                id="endereco"
+                                id="location"
                                 placeholder="Ex: Rua das Flores, 123 - São Paulo, SP"
-                                value={form.endereco}
-                                onChange={(e) => handleInputChange("endereco", e.target.value)}
-                                className={errors.endereco ? "border-red-500" : ""}
+                                value={form.location}
+                                onChange={(e) => handleInputChange("location", e.target.value)}
+                                className={errors.location ? "border-red-500" : ""}
                             />
-                            {errors.endereco && <p className="text-sm text-red-500">{errors.endereco}</p>}
+                            {errors.location && <p className="text-sm text-red-500">{errors.location}</p>}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="instrucoes">Instruções para Retirada</Label>
+                            <Label htmlFor="instructions">Instruções para Retirada</Label>
                             <Textarea
-                                id="instrucoes"
+                                id="instructions"
                                 placeholder="Horários disponíveis, pessoa de contato, instruções especiais..."
-                                value={form.instrucoes}
-                                onChange={(e) => handleInputChange("instrucoes", e.target.value)}
+                                value={form.instructions}
+                                onChange={(e) => handleInputChange("instructions", e.target.value)}
                                 rows={3}
                             />
                         </div>
