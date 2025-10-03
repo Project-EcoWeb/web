@@ -23,18 +23,21 @@ import {
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { useAuth } from "@/context/authContext"
+import { getMaterials } from "@/services/materialServices"
 
 interface Material {
-    id: number
-    nome: string
-    categoria: string
+    _id: number
+    name: string
+    category: string
     status: string
     interessados: number
-    dataPublicacao: string
-    dataCriacao: string
-    quantidade: string
-    descricao: string
-    endereco: string
+    updatedAt: string
+    createdAt: string
+    quantity: number
+    description: string
+    location: string,
+    unitOfMeasure: string,
     fotos: string[]
 }
 
@@ -54,6 +57,7 @@ const statusLabels = {
 }
 
 export default function MaterialsHomePage() {
+    const { token } = useAuth();
     const [materials, setMaterials] = useState<Material[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
@@ -61,25 +65,25 @@ export default function MaterialsHomePage() {
     const [actionLoading, setActionLoading] = useState<number | null>(null)
 
     const fetchMaterials = async () => {
+
+        if (!token) return;
         try {
             setLoading(true)
-            const params = new URLSearchParams()
-            if (searchTerm) params.append("search", searchTerm)
-            if (statusFilter !== "all") params.append("status", statusFilter)
+            const params: { search?: string; status?: string } = {};
+            if (searchTerm) params.search = searchTerm;
+            if (statusFilter !== "all") params.search = statusFilter;
 
-            const response = await fetch(`/api/empresa/materiais?${params}`)
-            const data = await response.json()
-
-            if (data.success) {
-                setMaterials(data.data)
+            const response = await getMaterials(token);
+            if (response.status === 200) {
+                setMaterials(response.data);
             } else {
                 toast.error("Erro", {
                     description: "Não foi possível carregar os materiais",
                 })
             }
-        } catch (error) {
+        } catch (error: any) {
             toast.error("Erro", {
-                description: "Erro de conexão ao carregar materiais",
+                description: `Erro de conexão ao carregar materiais: ${error.message}`,
             })
         } finally {
             setLoading(false)
@@ -88,7 +92,7 @@ export default function MaterialsHomePage() {
 
     useEffect(() => {
         fetchMaterials()
-    }, [searchTerm, statusFilter])
+    }, [searchTerm, statusFilter, token])
 
     const handleStatusChange = async (materialId: number, newStatus: string) => {
         try {
@@ -104,7 +108,7 @@ export default function MaterialsHomePage() {
 
             if (data.success) {
                 setMaterials((prev) =>
-                    prev.map((material) => (material.id === materialId ? { ...material, status: newStatus } : material)),
+                    prev.map((material) => (material._id === materialId ? { ...material, status: newStatus } : material)),
                 )
 
                 toast.success("Sucesso", {
@@ -137,7 +141,7 @@ export default function MaterialsHomePage() {
             const data = await response.json()
 
             if (data.success) {
-                setMaterials((prev) => prev.filter((material) => material.id !== materialId))
+                setMaterials((prev) => prev.filter((material) => material._id !== materialId))
                 toast.success("Sucesso", {
                     description: "Material excluído com sucesso!",
                 })
@@ -200,7 +204,7 @@ export default function MaterialsHomePage() {
                                     <MessageCircle className="h-5 w-5 text-chart-2" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{materials.reduce((acc, m) => acc + m.interessados, 0)}</p>
+                                    <p className="text-2xl font-bold">{/*materials.reduce((acc, m) => acc + m.interessados, 0)*/}</p>
                                     <p className="text-sm text-muted-foreground">Mensagens Recebidas</p>
                                 </div>
                             </div>
@@ -312,29 +316,29 @@ export default function MaterialsHomePage() {
                                 </TableHeader>
                                 <TableBody>
                                     {materials.map((material) => (
-                                        <TableRow key={material.id} className="border-border/50 hover:bg-muted/10 transition-colors">
+                                        <TableRow key={material._id} className="border-border/50 hover:bg-muted/10 transition-colors">
                                             <TableCell>
                                                 <Link
-                                                    href={`/dashboard/materials/${material.id}`}
+                                                    href={`/dashboard/materials/${material._id}`}
                                                     className="flex items-center gap-4 hover:opacity-80 transition-opacity"
                                                 >
                                                     <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden">
                                                         <img
-                                                            src={material.fotos[0] || "/placeholder.svg?height=48&width=48"}
-                                                            alt={material.nome}
+                                                            src={/*material.fotos[0] || */ "https://eplast.com.br/wp-content/uploads/2023/12/garrafa_pet-1-768x432.jpg.webp"}
+                                                            alt={material.name}
                                                             className="h-10 w-10 rounded object-cover"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-foreground">{material.nome}</p>
+                                                        <p className="font-medium text-foreground">{material.name}</p>
                                                         <p className="text-sm text-muted-foreground">
-                                                            {material.categoria} • {material.quantidade}
+                                                            {material.category} • {`${material.quantity} ${material.unitOfMeasure}`}
                                                         </p>
                                                     </div>
                                                 </Link>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
-                                                {new Date(material.dataPublicacao).toLocaleDateString("pt-BR")}
+                                                {new Date(material.updatedAt).toLocaleDateString("pt-BR")}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant={getStatusBadgeVariant(material.status)} className="font-medium">
@@ -344,7 +348,7 @@ export default function MaterialsHomePage() {
                                             <TableCell>
                                                 {material.interessados > 0 ? (
                                                     <Button variant="ghost" size="sm" asChild className="h-auto p-0 font-normal">
-                                                        <Link href={`/dashboard/inbox?material=${material.id}`}>
+                                                        <Link href={`/dashboard/inbox?material=${material._id}`}>
                                                             <div className="flex items-center gap-2 text-primary hover:text-primary/80">
                                                                 <MessageCircle className="h-4 w-4" />
                                                                 <span>{material.interessados} mensagens</span>
@@ -358,7 +362,7 @@ export default function MaterialsHomePage() {
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
-                                                        <Link href={`/dashboard/materials/${material.id}/edit`}>
+                                                        <Link href={`/dashboard/materials/${material._id}/edit`}>
                                                             <Edit className="h-4 w-4" />
                                                         </Link>
                                                     </Button>
@@ -367,11 +371,11 @@ export default function MaterialsHomePage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleStatusChange(material.id, "Pausado")}
-                                                            disabled={actionLoading === material.id}
+                                                            onClick={() => handleStatusChange(material._id, "Pausado")}
+                                                            disabled={actionLoading === material._id}
                                                             className="h-8 w-8 p-0"
                                                         >
-                                                            {actionLoading === material.id ? (
+                                                            {actionLoading === material._id ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Pause className="h-4 w-4" />
@@ -381,11 +385,11 @@ export default function MaterialsHomePage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleStatusChange(material.id, "Publicado")}
-                                                            disabled={actionLoading === material.id}
+                                                            onClick={() => handleStatusChange(material._id, "Publicado")}
+                                                            disabled={actionLoading === material._id}
                                                             className="h-8 w-8 p-0"
                                                         >
-                                                            {actionLoading === material.id ? (
+                                                            {actionLoading === material._id ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Play className="h-4 w-4" />
@@ -397,11 +401,11 @@ export default function MaterialsHomePage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleStatusChange(material.id, "Doado")}
-                                                            disabled={actionLoading === material.id}
+                                                            onClick={() => handleStatusChange(material._id, "Doado")}
+                                                            disabled={actionLoading === material._id}
                                                             className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
                                                         >
-                                                            {actionLoading === material.id ? (
+                                                            {actionLoading === material._id ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Check className="h-4 w-4" />
@@ -412,11 +416,11 @@ export default function MaterialsHomePage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleDelete(material.id)}
-                                                        disabled={actionLoading === material.id}
+                                                        onClick={() => handleDelete(material._id)}
+                                                        disabled={actionLoading === material._id}
                                                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
                                                     >
-                                                        {actionLoading === material.id ? (
+                                                        {actionLoading === material._id ? (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
                                                         ) : (
                                                             <Trash2 className="h-4 w-4" />
