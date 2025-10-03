@@ -29,3 +29,21 @@ export async function register(material: MaterialData, token: string) {
         }
     }
 }
+
+export async function getMaterials(token: string) {
+    try {
+        const response = await api.get('/materials/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha ao listar materiais');
+        } else {
+            throw new Error('Erro na conexão com servidor');
+        }
+    }
+}
