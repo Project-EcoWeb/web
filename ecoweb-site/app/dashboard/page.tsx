@@ -57,8 +57,9 @@ const statusLabels = {
 }
 
 export default function MaterialsHomePage() {
-    const { token } = useAuth();
+    const { token, isLoading } = useAuth();
     const [materials, setMaterials] = useState<Material[]>([])
+    const [pageLoading, setPageLoading] = useState(true)
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
@@ -68,10 +69,10 @@ export default function MaterialsHomePage() {
 
         if (!token) return;
         try {
-            setLoading(true)
+            setPageLoading(true)
             const params: { search?: string; status?: string } = {};
             if (searchTerm) params.search = searchTerm;
-            if (statusFilter !== "all") params.search = statusFilter;
+            if (statusFilter !== "all") params.status = statusFilter;
 
             const response = await getMaterials(token);
             if (response.status === 200) {
@@ -86,14 +87,25 @@ export default function MaterialsHomePage() {
                 description: `Erro de conexão ao carregar materiais: ${error.message}`,
             })
         } finally {
-            setLoading(false)
+            setPageLoading(false)
         }
     }
 
     useEffect(() => {
-        fetchMaterials()
-    }, [searchTerm, statusFilter, token])
+        if (!isLoading) {
+            fetchMaterials();
+        }
+    }, [isLoading, searchTerm, statusFilter, token])
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Verificando sessão...</p>
+            </div>
+        );
+    }
+    
     const handleStatusChange = async (materialId: number, newStatus: string) => {
         try {
             setActionLoading(materialId)

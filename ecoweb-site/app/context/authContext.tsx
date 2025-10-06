@@ -6,6 +6,7 @@ import Cookies from 'js-cookie'
 import { loginCompany } from '@/services/companyService'
 interface AuthContextType {
   isAuthenticated: boolean
+  isLoading: boolean
   token: string | null
   login: (credentials: any) => Promise<void>
   logout: () => void
@@ -15,14 +16,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('authToken')
-    if (storedToken) {
-      setToken(storedToken)
+    try {
+      const storedToken = Cookies.get('authToken'); 
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    } catch (error) {
+      console.error("Falha ao carregar o token de autenticação", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   const login = async (credentials: any) => {
     try {
@@ -45,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!token, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!token, token, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )
