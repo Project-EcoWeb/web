@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import { Package, MessageCircle, BarChart3, Settings, LogOut, User } from "lucide-react"
 import Link from "next/link"
@@ -10,6 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
+import { useAuth } from "@/context/authContext"
 
 const navigation = [
     {
@@ -33,7 +36,10 @@ export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
-}) {
+    }) {
+    
+    const { logout } = useAuth();
+        
     return (
         <div className="min-h-screen bg-background">
             <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -89,11 +95,12 @@ export default function DashboardLayout({
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link href="/login" className="flex items-center gap-2 text-red-400 hover:text-red-300">
-                                    <LogOut className="h-4 w-4" />
-                                    <span>Sair</span>
-                                </Link>
+                            <DropdownMenuItem
+                                onSelect={logout}
+                                className="flex items-center gap-2 text-red-500 hover:!text-red-400 cursor-pointer"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span>Sair</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

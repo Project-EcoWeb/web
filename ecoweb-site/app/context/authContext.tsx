@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await loginCompany(credentials) 
       const new_token = response.token
 
-      Cookies.set('authToken', new_token, { expires: 3 })
+      Cookies.set('authToken', new_token, { expires: 3 , path: '/'})
       setToken(new_token)
       
     } catch (error) {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const logout = () => {
-    Cookies.remove('authToken')
+    Cookies.remove('authToken', { path: '/'})
     setToken(null)
     router.push('/login')
   }
