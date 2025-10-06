@@ -47,3 +47,20 @@ export async function getMaterials(token: string) {
         }
     }
 }
+        
+export async function getMaterialById(id: string, token: string) {
+    try {
+        const response = await api.get(`/materials/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha ao buscar material');
+        }
+        throw new Error('Erro de conexão ao buscar material');
+    }
+}
