@@ -23,19 +23,22 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { useAuth } from "@/context/authContext"
+import { getMaterialById } from "@/services/materialServices"
 
 interface Material {
     id: number
-    nome: string
-    categoria: string
+    name: string
+    category: string
     status: string
     interessados: number
-    dataPublicacao: string
-    dataCriacao: string
-    quantidade: string
-    descricao: string
-    endereco: string
-    fotos: string[]
+    updatedAt: string
+    unitOfMeasure: string
+    createdAt: string
+    quantity: string
+    description: string
+    location: string
+    fotos: []
 }
 
 const statusColors = {
@@ -48,6 +51,7 @@ const statusColors = {
 export default function MaterialDetailPage() {
     const params = useParams()
     const router = useRouter()
+    const { token } = useAuth();
     const [material, setMaterial] = useState<Material | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -55,16 +59,17 @@ export default function MaterialDetailPage() {
 
     useEffect(() => {
         fetchMaterial()
-    }, [params.id])
+    }, [params.id, token])
 
     const fetchMaterial = async () => {
+        const materialId = params.id as string;
+        if (!materialId || !token) return;
         try {
             setLoading(true)
-            const response = await fetch(`/api/materiais/${params.id}`)
-            const data = await response.json()
+            const response = await getMaterialById(materialId, token);
 
-            if (data.success) {
-                setMaterial(data.data)
+            if (response.status === 200) {
+                setMaterial(response.data);
             } else {
                 toast.error("Erro", {
                     description: "Material não encontrado",
@@ -129,10 +134,10 @@ export default function MaterialDetailPage() {
                                 Voltar
                             </Button>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-balance">{material.nome}</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-balance">{material.name}</h1>
                                 <p className="text-muted-foreground flex items-center gap-2">
                                     <Package className="h-4 w-4" />
-                                    {material.categoria} • Publicado em {new Date(material.dataPublicacao).toLocaleDateString("pt-BR")}
+                                    {material.category} • Publicado em {new Date(material.updatedAt).toLocaleDateString("pt-BR")}
                                 </p>
                             </div>
                         </div>
@@ -161,7 +166,7 @@ export default function MaterialDetailPage() {
                     <div className="xl:col-span-3 space-y-8">
                         <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
                             <CardContent className="p-0">
-                                {material.fotos.length > 0 ? (
+                                {material?.fotos?.length > 0 ? (
                                     <div className="space-y-4">
                                         {/* Main Image */}
                                         <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
@@ -169,7 +174,7 @@ export default function MaterialDetailPage() {
                                                 <div className="relative aspect-video cursor-pointer group overflow-hidden">
                                                     <img
                                                         src={material.fotos[selectedImageIndex] || "/placeholder.svg"}
-                                                        alt={`${material.nome} - Foto principal`}
+                                                        alt={`${material.name} - Foto principal`}
                                                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                                     />
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -207,7 +212,7 @@ export default function MaterialDetailPage() {
                                                 <div className="relative aspect-video">
                                                     <img
                                                         src={material.fotos[selectedImageIndex] || "/placeholder.svg"}
-                                                        alt={`${material.nome} - Foto ${selectedImageIndex + 1}`}
+                                                        alt={`${material.name} - Foto ${selectedImageIndex + 1}`}
                                                         className="w-full h-full object-contain"
                                                     />
                                                     {material.fotos.length > 1 && (
@@ -249,7 +254,7 @@ export default function MaterialDetailPage() {
                                                         >
                                                             <img
                                                                 src={foto || "/placeholder.svg"}
-                                                                alt={`${material.nome} - Miniatura ${index + 1}`}
+                                                                alt={`${material.name} - Miniatura ${index + 1}`}
                                                                 className="w-full h-full object-cover"
                                                             />
                                                         </button>
@@ -273,7 +278,7 @@ export default function MaterialDetailPage() {
                             <CardContent>
                                 <div className="prose prose-sm max-w-none dark:prose-invert">
                                     <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                                        {material.descricao || "Nenhuma descrição fornecida."}
+                                        {material.description || "Nenhuma descrição fornecida."}
                                     </p>
                                 </div>
                             </CardContent>
@@ -292,7 +297,7 @@ export default function MaterialDetailPage() {
                                         <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
                                         <div className="flex-1">
                                             <p className="font-medium text-sm">Quantidade</p>
-                                            <p className="text-foreground">{material.quantidade}</p>
+                                            <p className="text-foreground">{`${material.quantity} ${material.unitOfMeasure}`}</p>
                                         </div>
                                     </div>
 
@@ -302,7 +307,7 @@ export default function MaterialDetailPage() {
                                         <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                                         <div className="flex-1">
                                             <p className="font-medium text-sm">Localização</p>
-                                            <p className="text-foreground">{material.endereco}</p>
+                                            <p className="text-foreground">{material.location}</p>
                                         </div>
                                     </div>
 
@@ -312,7 +317,7 @@ export default function MaterialDetailPage() {
                                         <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                                         <div className="flex-1">
                                             <p className="font-medium text-sm">Data de Criação</p>
-                                            <p className="text-foreground">{new Date(material.dataCriacao).toLocaleDateString("pt-BR")}</p>
+                                            <p className="text-foreground">{new Date(material.createdAt).toLocaleDateString("pt-BR")}</p>
                                         </div>
                                     </div>
                                 </div>
