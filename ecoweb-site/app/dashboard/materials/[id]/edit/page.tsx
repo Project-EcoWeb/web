@@ -8,67 +8,69 @@ import { Input } from "components/ui/input"
 import { Label } from "components/ui/label"
 import { Textarea } from "components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select"
-import { Upload, X, Save, ArrowLeft, Loader2 } from "lucide-react"
+import { Upload, X, Save, ArrowLeft, Loader2, ReceiptRussianRuble } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
 import { toast } from "sonner"
 import { useRouter, useParams } from "next/navigation"
+import { useAuth } from "@/context/authContext"
+import { getMaterialById, updateMaterialById } from "@/services/materialServices"
 
 interface MaterialForm {
-    nome: string
-    categoria: string
-    descricao: string
-    quantidade: string
-    unidadeMedida: string
-    endereco: string
-    instrucoes: string
+    name: string
+    category: string
+    description: string
+    quantity: number
+    unitOfMeasure: string
+    location: string
+    instructions: string
     fotos: (File | string)[]
 }
 
-const categorias = ["Madeira", "Plástico", "Metal", "Tecido", "Eletrônicos", "Papel", "Vidro", "Borracha", "Outros"]
+const categories = ["Madeira", "Plástico", "Metal", "Tecido", "Eletrônicos", "Papel", "Vidro", "Borracha", "Outros"]
 
-const unidadesMedida = ["kg", "ton", "peças", "metros", "m²", "m³", "litros", "unidades"]
+const unitsOfMeasure = ["kg", "ton", "peças", "metros", "m²", "m³", "litros", "unidades"]
 
 export default function EditMaterialPage() {
     const router = useRouter()
+    const { token } = useAuth()
     const params = useParams()
     const materialId = params.id as string
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [loading, setLoading] = useState(false)
     const [initialLoading, setInitialLoading] = useState(true)
     const [form, setForm] = useState<MaterialForm>({
-        nome: "",
-        categoria: "",
-        descricao: "",
-        quantidade: "",
-        unidadeMedida: "kg",
-        endereco: "",
-        instrucoes: "",
+        name: "",
+        category: "",
+        description: "",
+        quantity: 0,
+        unitOfMeasure: "kg",
+        location: "",
+        instructions: "",
         fotos: [],
     })
     const [errors, setErrors] = useState<Record<string, string>>({})
 
     useEffect(() => {
         const fetchMaterial = async () => {
-            try {
-                const response = await fetch(`/api/materiais/${materialId}`)
-                const data = await response.json()
 
-                if (data.success) {
-                    const material = data.data
-                    // Parse quantity and unit
-                    const quantityParts = material.quantidade.split(" ")
-                    const quantidade = quantityParts[0] || ""
-                    const unidadeMedida = quantityParts[1] || "kg"
+            if (!token) return;
+
+            try {
+                const response = await getMaterialById(materialId, token)
+
+                if (response.status === 200) {
+                    const material = response.data
+
 
                     setForm({
-                        nome: material.nome || "",
-                        categoria: material.categoria || "",
-                        descricao: material.descricao || "",
-                        quantidade,
-                        unidadeMedida,
-                        endereco: material.endereco || "",
-                        instrucoes: material.instrucoes || "",
+                        name: material.name || "",
+                        category: material.category || "",
+                        description: material.description || "",
+                        quantity: Number(material.quantity),
+                        unitOfMeasure: material.unitOfMeasure,
+                        location: material.location || "",
+                        instructions: material.instructions || "",
                         fotos: material.fotos || [],
                     })
                 } else {
@@ -89,7 +91,7 @@ export default function EditMaterialPage() {
         if (materialId) {
             fetchMaterial()
         }
-    }, [materialId, router])
+    }, [materialId, token, router])
 
     const handleInputChange = (field: keyof MaterialForm, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }))
@@ -138,11 +140,11 @@ export default function EditMaterialPage() {
     const validateForm = () => {
         const newErrors: Record<string, string> = {}
 
-        if (!form.nome.trim()) newErrors.nome = "Nome do material é obrigatório"
-        if (!form.categoria) newErrors.categoria = "Categoria é obrigatória"
-        if (!form.descricao.trim()) newErrors.descricao = "Descrição é obrigatória"
-        if (!form.quantidade.trim()) newErrors.quantidade = "Quantidade é obrigatória"
-        if (!form.endereco.trim()) newErrors.endereco = "Endereço de retirada é obrigatório"
+        if (!form.name.trim()) newErrors.name = "Nome do material é obrigatório"
+        if (!form.category) newErrors.category = "Categoria é obrigatória"
+        if (!form.description.trim()) newErrors.description = "Descrição é obrigatória"
+        if (form.quantity === null || form.quantity <= 0) newErrors.quantity = "Quantidade é obrigatória e maior que 0"
+        if (!form.location.trim()) newErrors.location = "Endereço de retirada é obrigatório"
         if (form.fotos.length === 0) newErrors.fotos = "Pelo menos uma foto é obrigatória"
 
         setErrors(newErrors)
@@ -156,13 +158,19 @@ export default function EditMaterialPage() {
             })
             return
         }
-
+        
+        if (!token) {
+            toast.error('Autenticação Necessária')
+            return
+        }
+            
         setLoading(true)
 
+        
         try {
             const formData = {
                 ...form,
-                quantidade: `${form.quantidade} ${form.unidadeMedida}`,
+                quantidade: `${form.quantity} ${form.unitOfMeasure}`,
                 fotos: form.fotos.map((file) =>
                     typeof file === "string"
                         ? file
@@ -170,22 +178,16 @@ export default function EditMaterialPage() {
                 ),
             }
 
-            const response = await fetch(`/api/materiais/${materialId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            })
+            const response = await updateMaterialById(materialId, form, token)
 
-            const data = await response.json()
-
-            if (data.success) {
+            if (response.status === 200) {
                 toast.success("Sucesso", {
                     description: "Material atualizado com sucesso!",
                 })
                 router.push("/dashboard")
             } else {
                 toast.error("Erro", {
-                    description: data.error || "Não foi possível atualizar o material",
+                    description: response.data.message || "Não foi possível atualizar o material",
                 })
             }
         } catch (error) {
@@ -215,7 +217,7 @@ export default function EditMaterialPage() {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Editando: {form.nome}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Editando: {form.name}</h1>
                     <p className="text-muted-foreground">Atualize as informações do seu material</p>
                 </div>
             </div>
@@ -234,27 +236,27 @@ export default function EditMaterialPage() {
                                 <Input
                                     id="nome"
                                     placeholder="Ex: Sobra de Paletes PBR"
-                                    value={form.nome}
-                                    onChange={(e) => handleInputChange("nome", e.target.value)}
-                                    className={errors.nome ? "border-red-500" : ""}
+                                    value={form.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
+                                    className={errors.name ? "border-red-500" : ""}
                                 />
-                                {errors.nome && <p className="text-sm text-red-500">{errors.nome}</p>}
+                                {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="categoria">Categoria *</Label>
-                                <Select value={form.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
-                                    <SelectTrigger className={errors.categoria ? "border-red-500" : ""}>
+                                <Select value={form.category} onValueChange={(value) => handleInputChange("category", value)}>
+                                    <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                                         <SelectValue placeholder="Selecione uma categoria" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categorias.map((categoria) => (
+                                        {categories.map((categoria) => (
                                             <SelectItem key={categoria} value={categoria}>
                                                 {categoria}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.categoria && <p className="text-sm text-red-500">{errors.categoria}</p>}
+                                {errors.category && <p className="text-sm text-red-500">{errors.category}</p>}
                             </div>
                         </div>
 
@@ -263,12 +265,12 @@ export default function EditMaterialPage() {
                             <Textarea
                                 id="descricao"
                                 placeholder="Descreva o material, sua condição, dimensões e possíveis usos..."
-                                value={form.descricao}
-                                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                                value={form.description}
+                                onChange={(e) => handleInputChange("description", e.target.value)}
                                 rows={4}
-                                className={errors.descricao ? "border-red-500" : ""}
+                                className={errors.description ? "border-red-500" : ""}
                             />
-                            {errors.descricao && <p className="text-sm text-red-500">{errors.descricao}</p>}
+                            {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
@@ -277,20 +279,20 @@ export default function EditMaterialPage() {
                                 <Input
                                     id="quantidade"
                                     placeholder="Ex: 100"
-                                    value={form.quantidade}
-                                    onChange={(e) => handleInputChange("quantidade", e.target.value)}
-                                    className={errors.quantidade ? "border-red-500" : ""}
+                                    value={form.quantity}
+                                    onChange={(e) => handleInputChange("quantity", e.target.value)}
+                                    className={errors.quantity ? "border-red-500" : ""}
                                 />
-                                {errors.quantidade && <p className="text-sm text-red-500">{errors.quantidade}</p>}
+                                {errors.quantity && <p className="text-sm text-red-500">{errors.quantity}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="unidadeMedida">Unidade</Label>
-                                <Select value={form.unidadeMedida} onValueChange={(value) => handleInputChange("unidadeMedida", value)}>
+                                <Select value={form.unitOfMeasure} onValueChange={(value) => handleInputChange("unitOfMeasure", value)}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {unidadesMedida.map((unidade) => (
+                                        {unitsOfMeasure.map((unidade) => (
                                             <SelectItem key={unidade} value={unidade}>
                                                 {unidade}
                                             </SelectItem>
@@ -366,11 +368,11 @@ export default function EditMaterialPage() {
                             <Input
                                 id="endereco"
                                 placeholder="Ex: Rua das Flores, 123 - São Paulo, SP"
-                                value={form.endereco}
-                                onChange={(e) => handleInputChange("endereco", e.target.value)}
-                                className={errors.endereco ? "border-red-500" : ""}
+                                value={form.location}
+                                onChange={(e) => handleInputChange("location", e.target.value)}
+                                className={errors.location ? "border-red-500" : ""}
                             />
-                            {errors.endereco && <p className="text-sm text-red-500">{errors.endereco}</p>}
+                            {errors.location && <p className="text-sm text-red-500">{errors.location}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -378,8 +380,8 @@ export default function EditMaterialPage() {
                             <Textarea
                                 id="instrucoes"
                                 placeholder="Horários disponíveis, pessoa de contato, instruções especiais..."
-                                value={form.instrucoes}
-                                onChange={(e) => handleInputChange("instrucoes", e.target.value)}
+                                value={form.instructions}
+                                onChange={(e) => handleInputChange("instructions", e.target.value)}
                                 rows={3}
                             />
                         </div>

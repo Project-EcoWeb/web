@@ -27,7 +27,7 @@ import { useAuth } from "@/context/authContext"
 import { getMaterialById } from "@/services/materialServices"
 
 interface Material {
-    id: number
+    id: string
     name: string
     category: string
     status: string
@@ -35,6 +35,7 @@ interface Material {
     updatedAt: string
     unitOfMeasure: string
     createdAt: string
+    instructions: string
     quantity: string
     description: string
     location: string
@@ -56,13 +57,13 @@ export default function MaterialDetailPage() {
     const [loading, setLoading] = useState(true)
     const [selectedImageIndex, setSelectedImageIndex] = useState(0)
     const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
+    const materialId = params.id as string;
 
     useEffect(() => {
         fetchMaterial()
     }, [params.id, token])
 
     const fetchMaterial = async () => {
-        const materialId = params.id as string;
         if (!materialId || !token) return;
         try {
             setLoading(true)
@@ -150,7 +151,7 @@ export default function MaterialDetailPage() {
                                 Compartilhar
                             </Button>
                             <Button size="sm" asChild>
-                                <Link href={`/dashboard/materials/${material.id}/edit`}>
+                                <Link href={`/dashboard/materials/${materialId}/edit`}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Editar
                                 </Link>
@@ -279,6 +280,15 @@ export default function MaterialDetailPage() {
                                 <div className="prose prose-sm max-w-none dark:prose-invert">
                                     <p className="text-foreground leading-relaxed whitespace-pre-wrap">
                                         {material.description || "Nenhuma descrição fornecida."}
+                                    </p>
+                                </div>
+                            </CardContent>                            <CardHeader>
+                                <CardTitle className="text-xl">Instruções</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="prose prose-sm max-w-none dark:prose-invert">
+                                    <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                                        {material.instructions || "Nenhuma instrução fornecida."}
                                     </p>
                                 </div>
                             </CardContent>

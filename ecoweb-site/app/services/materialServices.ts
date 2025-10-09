@@ -64,3 +64,34 @@ export async function getMaterialById(id: string, token: string) {
         throw new Error('Erro de conexão ao buscar material');
     }
 }
+
+export async function updateMaterialById(id: string, body: object, token: string) {
+    try {
+        const response = await api.patch(`/materials/${id}`, body, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha ao editar material');
+        }
+        throw new Error('Erro de conexão ao editar material');
+    }
+}
+
+export async function deleteMaterialById(id: string, token: string) {
+    try {
+        const response = await api.delete(`/materials/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha ao excluir o material');
+        }
+        throw new Error('Erro de conexão ao excluir o material');
+    }
+}
