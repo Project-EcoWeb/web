@@ -159,9 +159,9 @@ export default function EditMaterialPage() {
             return
         }
         
-        if (!token) {;
-            toast.error('Autenticação Necessária');
-            return;
+        if (!token) {
+            toast.error('Autenticação Necessária')
+            return
         }
             
         setLoading(true)
