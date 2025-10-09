@@ -24,10 +24,10 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/context/authContext"
-import { getMaterials } from "@/services/materialServices"
+import { getMaterials, deleteMaterialById } from "@/services/materialServices"
 
 interface Material {
-    _id: number
+    _id: string
     name: string
     category: string
     status: string
@@ -63,7 +63,7 @@ export default function MaterialsHomePage() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
-    const [actionLoading, setActionLoading] = useState<number | null>(null)
+    const [actionLoading, setActionLoading] = useState<string | null>(null)
 
     const fetchMaterials = async () => {
 
@@ -106,7 +106,7 @@ export default function MaterialsHomePage() {
         );
     }
     
-    const handleStatusChange = async (materialId: number, newStatus: string) => {
+    const handleStatusChange = async (materialId: string, newStatus: string) => {
         try {
             setActionLoading(materialId)
 
@@ -120,7 +120,7 @@ export default function MaterialsHomePage() {
 
             if (data.success) {
                 setMaterials((prev) =>
-                    prev.map((material) => (material._id === materialId ? { ...material, status: newStatus } : material)),
+                    prev.map((material) => (material._id.includes(String(materialId)) ? { ...material, status: newStatus } : material)),
                 )
 
                 toast.success("Sucesso", {
@@ -140,36 +140,39 @@ export default function MaterialsHomePage() {
         }
     }
 
-    const handleDelete = async (materialId: number) => {
-        if (!confirm("Tem certeza que deseja excluir este material?")) return
+    const handleDelete = async (materialId: string) => {
+        if (!token) {
+            toast.error("Erro", { description: "Você não está autenticado." });
+            return;
+        }
+
+        if (!window.confirm("Tem certeza que deseja excluir este material? Esta ação não pode ser desfeita.")) {
+            return;
+        }
 
         try {
-            setActionLoading(materialId)
+            setActionLoading(materialId);
 
-            const response = await fetch(`/api/materiais/${materialId}`, {
-                method: "DELETE",
-            })
+            const response = await deleteMaterialById(materialId, token);
 
-            const data = await response.json()
-
-            if (data.success) {
-                setMaterials((prev) => prev.filter((material) => material._id !== materialId))
+            if (response.status === 200) {
+                setMaterials((prev) => prev.filter((material) => material._id !== materialId));
                 toast.success("Sucesso", {
                     description: "Material excluído com sucesso!",
-                })
+                });
             } else {
                 toast.error("Erro", {
-                    description: data.error || "Não foi possível excluir o material",
-                })
+                    description: response.data.message || "Não foi possível excluir o material",
+                });
             }
-        } catch (error) {
+        } catch (error: any) {
             toast.error("Erro", {
-                description: "Erro de conexão ao excluir material",
-            })
+                description: error.message || "Erro de conexão ao excluir material",
+            });
         } finally {
-            setActionLoading(null)
+            setActionLoading(null);
         }
-    }
+    };
 
     const getStatusBadgeVariant = (status: string) => {
         return statusColors[status as keyof typeof statusColors] || "default"
@@ -384,10 +387,10 @@ export default function MaterialsHomePage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleStatusChange(material._id, "Pausado")}
-                                                            disabled={actionLoading === material._id}
+                                                            disabled={String(actionLoading).includes(material._id)}
                                                             className="h-8 w-8 p-0"
                                                         >
-                                                            {actionLoading === material._id ? (
+                                                            {String(actionLoading).includes(material._id) ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Pause className="h-4 w-4" />
@@ -398,10 +401,10 @@ export default function MaterialsHomePage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleStatusChange(material._id, "Publicado")}
-                                                            disabled={actionLoading === material._id}
+                                                            disabled={String(actionLoading).includes(material._id)}
                                                             className="h-8 w-8 p-0"
                                                         >
-                                                            {actionLoading === material._id ? (
+                                                            {String(actionLoading).includes(material._id) ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Play className="h-4 w-4" />
@@ -414,10 +417,10 @@ export default function MaterialsHomePage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleStatusChange(material._id, "Doado")}
-                                                            disabled={actionLoading === material._id}
+                                                            disabled={String(actionLoading).includes(material._id)}
                                                             className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
                                                         >
-                                                            {actionLoading === material._id ? (
+                                                            {String(actionLoading).includes(material._id) ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                             ) : (
                                                                 <Check className="h-4 w-4" />
@@ -429,10 +432,10 @@ export default function MaterialsHomePage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleDelete(material._id)}
-                                                        disabled={actionLoading === material._id}
+                                                        disabled={String(actionLoading).includes(material._id)}
                                                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
                                                     >
-                                                        {actionLoading === material._id ? (
+                                                        {String(actionLoading).includes(material._id) ? (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
                                                         ) : (
                                                             <Trash2 className="h-4 w-4" />
