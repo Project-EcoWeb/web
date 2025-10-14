@@ -24,7 +24,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/context/authContext"
-import { getMaterials, deleteMaterialById } from "@/services/materialServices"
+import { getMaterials, deleteMaterialById, updateStatusByMaterialId } from "@/services/materialServices"
 
 interface Material {
     _id: string
@@ -107,18 +107,22 @@ export default function MaterialsHomePage() {
     }
     
     const handleStatusChange = async (materialId: string, newStatus: string) => {
+
+        if (!token) {
+            toast.error("Erro", { description: "Você não está autenticado." });
+            return;
+        }
+
+        if (!window.confirm("Tem certeza que deseja alterar o status este material?")) {
+            return;
+        }
+
         try {
             setActionLoading(materialId)
 
-            const response = await fetch(`/api/materiais/${materialId}/status`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
-            })
+            const response = await updateStatusByMaterialId(materialId, newStatus, token);
 
-            const data = await response.json()
-
-            if (data.success) {
+            if (response.status === 200) {
                 setMaterials((prev) =>
                     prev.map((material) => (material._id.includes(String(materialId)) ? { ...material, status: newStatus } : material)),
                 )
@@ -128,7 +132,7 @@ export default function MaterialsHomePage() {
                 })
             } else {
                 toast.error("Erro", {
-                    description: data.error || "Não foi possível alterar o status",
+                    description: response.data.message || "Não foi possível alterar o status",
                 })
             }
         } catch (error) {
