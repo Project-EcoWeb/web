@@ -105,7 +105,6 @@ export default function NewMaterialPage() {
             newErrors.quantity = "Quantidade deve ser um número válido"
         } 
         if (!form.location.trim()) newErrors.location = "Endereço de retirada é obrigatório"
-        if (form.fotos.length === 0) newErrors.fotos = "Pelo menos uma foto é obrigatória"
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0

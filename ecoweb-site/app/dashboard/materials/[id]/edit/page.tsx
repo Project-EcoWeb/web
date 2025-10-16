@@ -95,7 +95,6 @@ export default function EditMaterialPage() {
 
     const handleInputChange = (field: keyof MaterialForm, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }))
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: "" }))
         }
@@ -105,7 +104,7 @@ export default function EditMaterialPage() {
         const files = Array.from(event.target.files || [])
         const validFiles = files.filter((file) => {
             const isValidType = file.type.startsWith("image/")
-            const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB
+            const isValidSize = file.size <= 5 * 1024 * 1024 
 
             if (!isValidType) {
                 toast.error("Erro", {
@@ -145,7 +144,6 @@ export default function EditMaterialPage() {
         if (!form.description.trim()) newErrors.description = "Descrição é obrigatória"
         if (form.quantity === null || form.quantity <= 0) newErrors.quantity = "Quantidade é obrigatória e maior que 0"
         if (!form.location.trim()) newErrors.location = "Endereço de retirada é obrigatório"
-        if (form.fotos.length === 0) newErrors.fotos = "Pelo menos uma foto é obrigatória"
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -223,7 +221,6 @@ export default function EditMaterialPage() {
             </div>
 
             <div className="max-w-2xl mx-auto space-y-6">
-                {/* Basic Information */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Informações do Material</CardTitle>
@@ -304,7 +301,6 @@ export default function EditMaterialPage() {
                     </CardContent>
                 </Card>
 
-                {/* Photos */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Fotos do Material *</CardTitle>
@@ -356,7 +352,6 @@ export default function EditMaterialPage() {
                     </CardContent>
                 </Card>
 
-                {/* Pickup Information */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Informações de Retirada</CardTitle>
