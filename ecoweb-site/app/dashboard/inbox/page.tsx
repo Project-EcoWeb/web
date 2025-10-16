@@ -99,7 +99,7 @@ export default function InboxPage() {
                         : null,
                 )
                 setNewMessage("")
-                fetchConversations() // Refresh conversation list
+                fetchConversations() 
             }
         } catch (error) {
             console.error("Error sending message:", error)

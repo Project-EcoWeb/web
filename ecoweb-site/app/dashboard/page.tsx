@@ -38,7 +38,7 @@ interface Material {
     description: string
     location: string,
     unitOfMeasure: string,
-    fotos: string[]
+    image: string
 }
 
 const statusColors = {
@@ -200,7 +200,6 @@ export default function MaterialsHomePage() {
                     </Button>
                 </div>
 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <Card className="border-border/50 bg-card/50 backdrop-blur">
                         <CardContent className="p-6">
@@ -343,7 +342,7 @@ export default function MaterialsHomePage() {
                                                 >
                                                     <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden">
                                                         <img
-                                                            src={/*material.fotos[0] || */ "https://meiosustentavel.com.br/wp-content/uploads/2020/08/eco-3516734_1920.png"}
+                                                            src={material.image}
                                                             alt={material.name}
                                                             className="h-10 w-10 rounded object-cover"
                                                         />

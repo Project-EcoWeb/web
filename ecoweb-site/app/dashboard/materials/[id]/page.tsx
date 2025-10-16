@@ -17,9 +17,7 @@ import {
     Loader2,
     ExternalLink,
     Share2,
-    Eye,
-    ChevronLeft,
-    ChevronRight,
+    Eye
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -39,7 +37,7 @@ interface Material {
     quantity: string
     description: string
     location: string
-    fotos: []
+    image: string
 }
 
 const statusColors = {
@@ -55,8 +53,6 @@ export default function MaterialDetailPage() {
     const { token } = useAuth();
     const [material, setMaterial] = useState<Material | null>(null)
     const [loading, setLoading] = useState(true)
-    const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-    const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
     const materialId = params.id as string;
 
     useEffect(() => {
@@ -101,15 +97,6 @@ export default function MaterialDetailPage() {
 
     if (!material) {
         return null
-    }
-
-    const nextImage = () => {
-        setSelectedImageIndex((prev) => (prev + 1) % material.fotos.length)
-    }
-
-
-    const prevImage = () => {
-        setSelectedImageIndex((prev) => (prev - 1 + material.fotos.length) % material.fotos.length)
     }
 
     if (loading) {
@@ -163,107 +150,33 @@ export default function MaterialDetailPage() {
 
             <div className="max-w-7xl mx-auto p-6">
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-                    {/* Main Content - Takes more space on larger screens */}
                     <div className="xl:col-span-3 space-y-8">
                         <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
                             <CardContent className="p-0">
-                                {material?.fotos?.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {/* Main Image */}
-                                        <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-                                            <DialogTrigger asChild>
-                                                <div className="relative aspect-video cursor-pointer group overflow-hidden">
-                                                    <img
-                                                        src={material.fotos[selectedImageIndex] || "/placeholder.svg"}
-                                                        alt={`${material.name} - Foto principal`}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                        <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    </div>
-                                                    {material.fotos.length > 1 && (
-                                                        <>
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    prevImage()
-                                                                }}
-                                                            >
-                                                                <ChevronLeft className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    nextImage()
-                                                                }}
-                                                            >
-                                                                <ChevronRight className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </DialogTrigger>
-                                            <DialogContent className="max-w-4xl w-full">
-                                                <div className="relative aspect-video">
-                                                    <img
-                                                        src={material.fotos[selectedImageIndex] || "/placeholder.svg"}
-                                                        alt={`${material.name} - Foto ${selectedImageIndex + 1}`}
-                                                        className="w-full h-full object-contain"
-                                                    />
-                                                    {material.fotos.length > 1 && (
-                                                        <>
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                className="absolute left-4 top-1/2 -translate-y-1/2"
-                                                                onClick={prevImage}
-                                                            >
-                                                                <ChevronLeft className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                className="absolute right-4 top-1/2 -translate-y-1/2"
-                                                                onClick={nextImage}
-                                                            >
-                                                                <ChevronRight className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-
-                                        {/* Thumbnail Gallery */}
-                                        {material.fotos.length > 1 && (
-                                            <div className="px-6 pb-6">
-                                                <div className="flex gap-2 overflow-x-auto">
-                                                    {material.fotos.map((foto, index) => (
-                                                        <button
-                                                            key={index}
-                                                            onClick={() => setSelectedImageIndex(index)}
-                                                            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${selectedImageIndex === index
-                                                                ? "border-primary"
-                                                                : "border-transparent hover:border-border"
-                                                                }`}
-                                                        >
-                                                            <img
-                                                                src={foto || "/placeholder.svg"}
-                                                                alt={`${material.name} - Miniatura ${index + 1}`}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </button>
-                                                    ))}
+                                {material?.image ? (
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <div className="relative aspect-video cursor-pointer group overflow-hidden">
+                                                <img
+                                                    src={material.image || "/placeholder.svg"}
+                                                    alt={`${material.name} - Foto principal`}
+                                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                    <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-4xl w-full">
+                                            <div className="relative aspect-video">
+                                                <img
+                                                    src={material.image || "/placeholder.svg"}
+                                                    alt={`${material.name} - Foto principal`}
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 ) : (
                                     <div className="aspect-video bg-muted/50 flex items-center justify-center">
                                         <Package className="h-16 w-16 text-muted-foreground" />
@@ -271,7 +184,6 @@ export default function MaterialDetailPage() {
                                 )}
                             </CardContent>
                         </Card>
-
                         <Card className="border-border/50 bg-card/50 backdrop-blur">
                             <CardHeader>
                                 <CardTitle className="text-xl">Descrição</CardTitle>
