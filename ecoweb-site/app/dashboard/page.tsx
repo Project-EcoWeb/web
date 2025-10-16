@@ -343,7 +343,7 @@ export default function MaterialsHomePage() {
                                                 >
                                                     <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden">
                                                         <img
-                                                            src={/*material.fotos[0] || */ "https://eplast.com.br/wp-content/uploads/2023/12/garrafa_pet-1-768x432.jpg.webp"}
+                                                            src={/*material.fotos[0] || */ "https://meiosustentavel.com.br/wp-content/uploads/2020/08/eco-3516734_1920.png"}
                                                             alt={material.name}
                                                             className="h-10 w-10 rounded object-cover"
                                                         />
