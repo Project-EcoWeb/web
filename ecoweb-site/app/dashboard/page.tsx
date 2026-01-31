@@ -41,17 +41,10 @@ interface Material {
     image: string
 }
 
-const statusColors = {
-    Publicado: "default",
-    "Em Negociação": "secondary",
-    Pausado: "outline",
-    Doado: "destructive",
-} as const
 
 const statusLabels = {
     all: "Todos os Status",
     publicado: "Publicado",
-    "em-negociacao": "Em Negociação",
     pausado: "Pausado",
     doado: "Doado",
 }
@@ -178,10 +171,6 @@ export default function MaterialsHomePage() {
         }
     };
 
-    const getStatusBadgeVariant = (status: string) => {
-        return statusColors[status as keyof typeof statusColors] || "default"
-    }
-
     return (
         <div className="space-y-8">
             <div className="space-y-6">
@@ -200,62 +189,50 @@ export default function MaterialsHomePage() {
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="border-border/50 bg-card/50 backdrop-blur">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Package className="h-5 w-5 text-primary" />
+                <div className=" flex items-center justify-center">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mx:auto">
+                        <Card className="border-border/50 bg-card/50 backdrop-blur">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Package className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold">{materials.length}</p>
+                                        <p className="text-sm text-muted-foreground">Materiais Ativos</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-2xl font-bold">{materials.length}</p>
-                                    <p className="text-sm text-muted-foreground">Materiais Ativos</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="border-border/50 bg-card/50 backdrop-blur">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-chart-2/10 rounded-lg">
-                                    <MessageCircle className="h-5 w-5 text-chart-2" />
+                        <Card className="border-border/50 bg-card/50 backdrop-blur">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-chart-2/10 rounded-lg">
+                                        <MessageCircle className="h-5 w-5 text-chart-2" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold">{/*materials.reduce((acc, m) => acc + m.interessados, 0)*/}</p>
+                                        <p className="text-sm text-muted-foreground">Mensagens Recebidas</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-2xl font-bold">{/*materials.reduce((acc, m) => acc + m.interessados, 0)*/}</p>
-                                    <p className="text-sm text-muted-foreground">Mensagens Recebidas</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="border-border/50 bg-card/50 backdrop-blur">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-chart-3/10 rounded-lg">
-                                    <TrendingUp className="h-5 w-5 text-chart-3" />
+                        <Card className="border-border/50 bg-card/50 backdrop-blur">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-chart-3/10 rounded-lg">
+                                        <TrendingUp className="h-5 w-5 text-chart-3" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold">{materials.filter((m) => m.status === "Doado").length}</p>
+                                        <p className="text-sm text-muted-foreground">Doações Realizadas</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-2xl font-bold">{materials.filter((m) => m.status === "Doado").length}</p>
-                                    <p className="text-sm text-muted-foreground">Doações Realizadas</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border/50 bg-card/50 backdrop-blur">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-chart-4/10 rounded-lg">
-                                    <Clock className="h-5 w-5 text-chart-4" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold">{materials.filter((m) => m.status === "Em Negociação").length}</p>
-                                    <p className="text-sm text-muted-foreground">Em Negociação</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
 
@@ -357,11 +334,6 @@ export default function MaterialsHomePage() {
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {new Date(material.updatedAt).toLocaleDateString("pt-BR")}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={getStatusBadgeVariant(material.status)} className="font-medium">
-                                                    {material.status}
-                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 {material.interessados > 0 ? (
