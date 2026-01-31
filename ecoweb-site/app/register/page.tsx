@@ -48,7 +48,13 @@ export default function RegisterPage() {
 
             const response = await registerCompany(companyData);
             
-            if (response.status === 201) {
+            if (!response) {
+                alert("Erro ao cadastrar instituição. Tente novamente.");
+                setError("Erro ao cadastrar instituição. Tente novamente.");
+                return;
+            }
+
+            if (response.status === 201 ) {
                 alert("Instituição cadastrada com sucesso!");
                 router.push("/login");
             }
