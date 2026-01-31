@@ -18,9 +18,9 @@ export async function registerCompany(company: CompanyData) {
         return response;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.message || 'Falha ao cadastrar a empresa');
+            alert(error.response.data.message || 'Falha ao cadastrar a empresa');
         } else {
-            throw new Error('Erro na conexão com servidor');
+            alert('Erro na conexão com servidor');
         }
     }
 }
@@ -36,9 +36,9 @@ export async function loginCompany(company: LoginData) {
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.message || 'Falha no login');
+            alert(error.response.data.message || 'Falha no login');
         } else {
-            throw new Error('Erro na conexão com servidor');
+            alert('Erro na conexão com servidor');
         }
     }
 }
