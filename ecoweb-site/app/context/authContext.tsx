@@ -34,15 +34,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (credentials: any) => {
     try {
-      const response = await loginCompany(credentials) 
-      const new_token = response.token
+      const response = await loginCompany(credentials)
 
-      Cookies.set('authToken', new_token, { expires: 3 , path: '/'})
-      setToken(new_token)
+      if (!response || !response.token) {
+        return;
+      }
+
+      const new_token = response.token;
+
+      Cookies.set('authToken', new_token, { expires: 3, path: '/' });
+      setToken(new_token);
       
     } catch (error) {
-      console.error("Login failed:", error)
-      throw error
+      alert("Erro ao fazer login. Verifique suas credenciais e tente novamente.")
     }
   }
 
