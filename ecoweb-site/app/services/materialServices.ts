@@ -23,7 +23,7 @@ export async function register(material: MaterialData, token: string) {
         return response;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.message || 'Falha ao cadastrar a material');
+            alert(error.response.data.message || 'Falha ao cadastrar a material');
         } else {
             throw new Error('Erro na conexão com servidor');
         }
