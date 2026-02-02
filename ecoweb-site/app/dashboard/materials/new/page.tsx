@@ -51,7 +51,6 @@ export default function NewMaterialPage() {
 
     const handleInputChange = (field: keyof MaterialForm, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }))
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: "" }))
         }
@@ -143,6 +142,12 @@ export default function NewMaterialPage() {
 
             const response = await registerMaterial(materialData, token)
 
+            if (!response) {
+                setLoading(false);
+                alert("Não foi possível salvar o material.");
+                return;
+            }
+            
             if (response.status === 201 || response.status === 200) {
                 alert("Material publicado com sucesso!");
                 // toast.success("Sucesso", {
