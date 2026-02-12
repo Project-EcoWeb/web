@@ -10,6 +10,7 @@ import { Label } from "components/ui/label"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Bounce, toast, ToastContainer, TypeOptions } from "react-toastify"
 
 import { registerCompany } from "../services/companyService"
 
@@ -31,12 +32,27 @@ export default function RegisterPage() {
     })
     const [isLoading, setIsLoading] = useState(false)
 
+    const notify = (message: string, type: TypeOptions) => {
+        toast(message, {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+            type: type
+        });
+
+    }
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError(null);
 
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match");
+            notify("As senhas informadas são diferentes.", 'warning');
             setError("Passwords do not match");
             return;
         }
@@ -49,13 +65,13 @@ export default function RegisterPage() {
             const response = await registerCompany(companyData);
             
             if (!response) {
-                alert("Erro ao cadastrar instituição. Tente novamente.");
+                notify("Erro ao cadastrar instituição. Tente novamente.", 'error');
                 setError("Erro ao cadastrar instituição. Tente novamente.");
                 return;
             }
 
             if (response.status === 201 ) {
-                alert("Instituição cadastrada com sucesso!");
+                notify("Instituição cadastrada com sucesso!", 'success');
                 router.push("/login");
             }
 
@@ -214,10 +230,12 @@ export default function RegisterPage() {
                                 />
                             </div>
                         </div>
-
-                        <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                            {isLoading ? "Criando Conta..." : "Cadastrar Instituição"}
-                        </Button>
+                        <div>
+                            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                                {isLoading ? "Criando Conta..." : "Cadastrar Instituição"}
+                            </Button>
+                            <ToastContainer />
+                        </div>
                     </form>
 
                     <div className="mt-6 text-center">
