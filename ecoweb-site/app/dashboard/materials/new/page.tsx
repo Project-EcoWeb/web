@@ -111,9 +111,7 @@ export default function NewMaterialPage() {
 
     const handleSubmit = async () => {
         if (!validateForm()) {
-            toast.error("Erro de validação", {
-                description: "Por favor, corrija os campos obrigatórios",
-            })
+            notify('Por favor, corrija os campos obrigatórios', 'error');
             return
         }
 
