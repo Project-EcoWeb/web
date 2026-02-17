@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "c
 import { Upload, X, Send, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef } from "react"
-import { toast } from "sonner"
 import { useRouter, usePathname } from "next/navigation"
+import { toast, Bounce, TypeOptions, ToastContainer } from 'react-toastify';
+
 import { useAuth } from "@/context/authContext"
 import { register as registerMaterial } from "@/services/materialServices"
 
@@ -49,6 +50,34 @@ export default function NewMaterialPage() {
     })
     const [errors, setErrors] = useState<Record<string, string>>({})
 
+    const notify = (message: string, type: TypeOptions) => {
+        toast(message, {
+            position: "top-center",
+            autoClose: 2500,
+            hideProgressBar: false,
+            closeOnClick: true, 
+            pauseOnHover: false,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+            type: type
+        });
+    };
+
+    const notifyPromisse = async (resource: () => Promise<any>) => {
+        toast.promise(resource(), {
+            pending: 'Salvando material...',
+            success: 'Material cadastrado com sucesso!',
+            error: 'Não foi possível cadastrar o material'
+        }, {
+            position: 'top-center',
+            autoClose: 1500,
+            theme: 'light',
+            transition: Bounce
+        });
+    };
+
     const handleInputChange = (field: keyof MaterialForm, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }))
         if (errors[field]) {
@@ -63,16 +92,12 @@ export default function NewMaterialPage() {
             const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB
 
             if (!isValidType) {
-                toast.error("Erro", {
-                    description: `${file.name} não é uma imagem válida`,
-                })
+                notify(`${file.name} não é uma imagem válida`, 'error');
                 return false
             }
 
             if (!isValidSize) {
-                toast.error("Erro", {
-                    description: `${file.name} é muito grande (máximo 5MB)`,
-                })
+                notify(`${file.name} é muito grande(máximo 5MB)`, 'error');
                 return false
             }
 
@@ -109,19 +134,15 @@ export default function NewMaterialPage() {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = async () => {
+    const handleSubmitWithPromisse = async () => {
         if (!validateForm()) {
-            toast.error("Erro de validação", {
-                description: "Por favor, corrija os campos obrigatórios",
-            })
+            notify('Por favor, corrija os campos obrigatórios', 'error');
             return
         }
 
         if (!token) {
-            toast.error("Erro de Autenticação", {
-                description: "Você não está autenticado. Faça login novamente.",
-            })
-            router.push('/login');
+            notify('Você não está autenticado. Faça login novamente.', 'error');
+            setTimeout(() => router.push('/login'), 1500);
             return;
         }
 
@@ -129,46 +150,34 @@ export default function NewMaterialPage() {
 
         try {
 
-            const materialData = {
-                name: form.name,
-                category: form.category,
-                description: form.description,
-                quantity: Number(form.quantity),
-                unitOfMeasure: form.unitOfMeasure,
-                location: form.location,
-                instructions: form.instructions,
-                photos: null,
-            }
+            await notifyPromisse(async () => {
+                const materialData = {
+                    name: form.name,
+                    category: form.category,
+                    description: form.description,
+                    quantity: Number(form.quantity),
+                    unitOfMeasure: form.unitOfMeasure,
+                    location: form.location,
+                    instructions: form.instructions,
+                    photos: null,
+                };
 
-            const response = await registerMaterial(materialData, token)
+                const response = await registerMaterial(materialData, token);
 
-            if (!response) {
-                setLoading(false);
-                alert("Não foi possível salvar o material.");
-                return;
-            }
-            
-            if (response.status === 201 || response.status === 200) {
-                alert("Material publicado com sucesso!");
-                // toast.success("Sucesso", {
-                //     description: "Material publicado com sucesso!",
-                //     onAutoClose: () => {
-                //         router.push('/dashboard/materials')
-                //     }
-                // });
+                if (!response || response.status !== 201) {
+                    throw new Error(response?.data?.message || "Não foi possível salvar o material");
+                }
 
-                router.push('/dashboard/materials');
-            } else {
-                setLoading(false);
-                toast.error("Erro", {
-                    description: response.data.message || "Não foi possível salvar o material",
-                })
-            }
+                return response;
+            });
+
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 1500);
+
         } catch (error: any) {
             setLoading(false);
-            toast.error("Erro", {
-                description: error.message || "Ocorreu um erro inesperado.",
-            })
+            notify(error.message || "Ocorreu um erro inesperado", 'error');
         } finally {
             if (userpathname === '/dashboard/materials/new') {
                 setLoading(false);
@@ -360,10 +369,12 @@ export default function NewMaterialPage() {
                 </Card>
 
                 <div className="flex gap-4">
-                    <Button onClick={handleSubmit} disabled={loading} className="flex-1" size="lg">
+                    <Button onClick={handleSubmitWithPromisse} disabled={loading} className="flex-1" size="lg">
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Publicar Material
                     </Button>
+
+                    <ToastContainer />
 
                     <Button variant="outline" asChild className="flex-1 bg-transparent" size="lg">
                         <Link href="/dashboard">Cancelar</Link>
