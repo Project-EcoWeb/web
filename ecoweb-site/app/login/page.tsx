@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useAuth } from "@/context/authContext"
 import { useRouter } from "next/navigation"
 import { useSearchParams } from "next/navigation"
+import { toast, ToastContainer, Bounce, TypeOptions } from 'react-toastify'
 
 export default function LoginPage() {
     const { login } = useAuth()
@@ -25,23 +26,40 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+
+    const notifyPromisse = async (resource: () => Promise<any>) => {
+                toast.promise(resource(), {
+                    pending: 'Realizando login..',
+                    success: 'Login realizado com sucesso!',
+                    error: 'Email/Cnpj ou Senha inválidos'
+                }, {
+                    position: 'top-center',
+                    onClose() {
+                        setIsLoading(false)
+                    },
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: false,
+                    draggable: true,
+                    progress: undefined,
+                    theme: 'light',
+                    transition: Bounce
+                });
+        
+    }
+
+    const handleSubmitWithPromisse = async (e: React.FormEvent) => {
         e.preventDefault()
-        setIsLoading(true)
         setError(null)
 
-        try {
-            await login(formData)
-
-            const callbackUrl = searchParams.get('callbackUrl') || '/dashboard/materials'
-            router.push(callbackUrl)
-
-        } catch (err) {
-            setError("Falha no login. Verifique seu e-mail e senha.")
-            console.error(err)
-        } finally {
-            setIsLoading(false)
-        }
+        await notifyPromisse(async () => {
+            setIsLoading(true)
+            await login(formData);
+        });
+        
+        const callbackUrl = searchParams.get('callbackUrl') || '/dashboard/materials'
+        setTimeout(() => router.push(callbackUrl), 2000);
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +94,7 @@ export default function LoginPage() {
                         <p className="text-muted-foreground">Entre na sua conta corporativa</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmitWithPromisse} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="emailOrCnpj">Email Corporativo/CNPJ</Label>
                             <Input
@@ -106,6 +124,7 @@ export default function LoginPage() {
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? "Signing in..." : "Sign In"}
                         </Button>
+                        <ToastContainer />
                     </form>
 
                     <div className="mt-6 text-center">
