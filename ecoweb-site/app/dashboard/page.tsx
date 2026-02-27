@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card"
 import { Button } from "components/ui/button"
-import { Badge } from "components/ui/badge"
 import { Input } from "components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "components/ui/table"
@@ -22,9 +21,10 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 import { useAuth } from "@/context/authContext"
 import { getMaterials, deleteMaterialById, updateStatusByMaterialId } from "@/services/materialServices"
+import { TypeOptions, Bounce, toast, ToastContainer } from "react-toastify"
+import { ConfirmToast } from 'react-confirm-toast'
 
 interface Material {
     _id: string
@@ -57,7 +57,26 @@ export default function MaterialsHomePage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [actionLoading, setActionLoading] = useState<string | null>(null)
+    const [show, setShow] = useState(false);
 
+    const notify = (message: string, type: TypeOptions) => {
+        toast(message, {
+            position: "top-center",
+            autoClose: 800,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+            type: type
+        })
+    }
+
+    function myFunction() {
+        alert('done');
+    }
     const fetchMaterials = async () => {
 
         if (!token) return;
@@ -71,14 +90,10 @@ export default function MaterialsHomePage() {
             if (response.status === 200) {
                 setMaterials(response.data);
             } else {
-                toast.error("Erro", {
-                    description: "Não foi possível carregar os materiais",
-                })
+                notify('Não foi possível carregar os materiais', 'error');
             }
         } catch (error: any) {
-            toast.error("Erro", {
-                description: `Erro de conexão ao carregar materiais: ${error.message}`,
-            })
+            notify(`Erro de conexão ao carregar materiais: ${error.message}`, 'error');
         } finally {
             setPageLoading(false)
         }
@@ -102,7 +117,7 @@ export default function MaterialsHomePage() {
     const handleStatusChange = async (materialId: string, newStatus: string) => {
 
         if (!token) {
-            toast.error("Erro", { description: "Você não está autenticado." });
+            notify('Você não está autenticado.', 'error');
             return;
         }
 
@@ -120,18 +135,12 @@ export default function MaterialsHomePage() {
                     prev.map((material) => (material._id.includes(String(materialId)) ? { ...material, status: newStatus } : material)),
                 )
 
-                toast.success("Sucesso", {
-                    description: `Material ${newStatus.toLowerCase()} com sucesso!`,
-                })
+                notify(`Material ${newStatus.toLowerCase()} com sucesso!`, 'success');
             } else {
-                toast.error("Erro", {
-                    description: response.data.message || "Não foi possível alterar o status",
-                })
+                notify(response.data.message || "Não foi possível alterar o status", 'error');
             }
         } catch (error) {
-            toast.error("Erro", {
-                description: "Erro de conexão ao alterar status",
-            })
+            notify('Erro de conexão ao alterar status', 'error');
         } finally {
             setActionLoading(null)
         }
@@ -139,13 +148,13 @@ export default function MaterialsHomePage() {
 
     const handleDelete = async (materialId: string) => {
         if (!token) {
-            toast.error("Erro", { description: "Você não está autenticado." });
+            notify('Você não está autenticado.', 'error');
             return;
         }
 
-        if (!window.confirm("Tem certeza que deseja excluir este material? Esta ação não pode ser desfeita.")) {
-            return;
-        }
+        // if (!window.confirm("Tem certeza que deseja excluir este material? Esta ação não pode ser desfeita.")) {
+        //     return;
+        // }
 
         try {
             setActionLoading(materialId);
@@ -154,18 +163,12 @@ export default function MaterialsHomePage() {
 
             if (response.status === 200) {
                 setMaterials((prev) => prev.filter((material) => material._id !== materialId));
-                toast.success("Sucesso", {
-                    description: "Material excluído com sucesso!",
-                });
+                notify('Material excluído com sucesso!', 'success');
             } else {
-                toast.error("Erro", {
-                    description: response.data.message || "Não foi possível excluir o material",
-                });
+                notify(response.data.message || "Não foi possível excluir o material", 'error');
             }
         } catch (error: any) {
-            toast.error("Erro", {
-                description: error.message || "Erro de conexão ao excluir material",
-            });
+            notify(error.message || "Erro de conexão ao excluir material", 'error');
         } finally {
             setActionLoading(null);
         }
@@ -177,9 +180,9 @@ export default function MaterialsHomePage() {
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-bold tracking-tight text-balance">Meus Materiais</h1>
-                        <p className="text-lg text-muted-foreground text-pretty">
+                        {/* <p className="text-lg text-muted-foreground text-pretty">
                             Gerencie suas ofertas de materiais e conecte-se com organizações interessadas
-                        </p>
+                        </p> */}
                     </div>
                     <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
                         <Link href="/dashboard/materials/new">
@@ -406,7 +409,9 @@ export default function MaterialsHomePage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleDelete(material._id)}
+                                                        onClick={() => {
+                                                            setShow(true);
+                                                        }}
                                                         disabled={String(actionLoading).includes(material._id)}
                                                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
                                                     >
@@ -416,6 +421,15 @@ export default function MaterialsHomePage() {
                                                             <Trash2 className="h-4 w-4" />
                                                         )}
                                                     </Button>
+                                                    <ConfirmToast
+                                                        customFunction={() => handleDelete(material._id)}
+                                                        setShowConfirmToast={setShow}
+                                                        showConfirmToast={show}
+                                                        toastText="Deseja excluir este material?"
+                                                        position="top-right"
+                                                        buttonYesText="Sim"
+                                                        buttonNoText="Não"
+                                                    />
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -426,6 +440,7 @@ export default function MaterialsHomePage() {
                     )}
                 </CardContent>
             </Card>
+            <ToastContainer />
         </div>
     )
 }
