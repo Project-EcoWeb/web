@@ -59,6 +59,7 @@ export default function MaterialsHomePage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [showDelete, setShowDelete] = useState(false);
     const [showBreak, setShowBreak] = useState(false);
+    const [showDonated, setShowDonated] = useState(false);
 
     const notify = (message: string, type: TypeOptions) => {
         toast(message, {
@@ -405,10 +406,11 @@ export default function MaterialsHomePage() {
                                                     ) : null}
 
                                                     {material.status !== "Doado" && (
+                                                        <section>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleStatusChange(material._id, "Doado")}
+                                                            onClick={() => { setShowDonated(true)}}
                                                             disabled={String(actionLoading).includes(material._id)}
                                                             className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
                                                         >
@@ -418,6 +420,16 @@ export default function MaterialsHomePage() {
                                                                 <Check className="h-4 w-4" />
                                                             )}
                                                         </Button>
+                                                        <ConfirmToast
+                                                            customFunction={() => handleStatusChange(material._id, "Doado")}
+                                                            setShowConfirmToast={setShowDonated}
+                                                            showConfirmToast={showDonated}
+                                                            toastText="Deseja marcar como doado?"
+                                                            position="top-right"
+                                                            buttonYesText="Sim"
+                                                            buttonNoText="Não"
+                                                        />
+                                                        </section>
                                                     )}
 
                                                     <Button
