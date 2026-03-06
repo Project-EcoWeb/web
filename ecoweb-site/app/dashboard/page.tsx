@@ -57,7 +57,8 @@ export default function MaterialsHomePage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [actionLoading, setActionLoading] = useState<string | null>(null)
-    const [show, setShow] = useState(false);
+    const [showDelete, setShowDelete] = useState(false);
+    const [showBreak, setShowBreak] = useState(false);
 
     const notify = (message: string, type: TypeOptions) => {
         toast(message, {
@@ -121,9 +122,9 @@ export default function MaterialsHomePage() {
             return;
         }
 
-        if (!window.confirm("Tem certeza que deseja alterar o status este material?")) {
-            return;
-        }
+        // if (!window.confirm("Tem certeza que deseja alterar o status este material?")) {
+        //     return;
+        // }
 
         try {
             setActionLoading(materialId)
@@ -361,19 +362,32 @@ export default function MaterialsHomePage() {
                                                     </Button>
 
                                                     {material.status === "Publicado" ? (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleStatusChange(material._id, "Pausado")}
-                                                            disabled={String(actionLoading).includes(material._id)}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            {String(actionLoading).includes(material._id) ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Pause className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
+                                                        <section>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setShowBreak(true);
+                                                                }}
+                                                                disabled={String(actionLoading).includes(material._id)}
+                                                                className="h-8 w-8 p-0"
+                                                            >
+                                                                {String(actionLoading).includes(material._id) ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Pause className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                            <ConfirmToast
+                                                                customFunction={() => { handleStatusChange(material._id, 'Pausado')}}
+                                                                setShowConfirmToast={setShowBreak}
+                                                                showConfirmToast={showBreak}
+                                                                toastText="Deseja pausar a publicação deste material?"
+                                                                position="top-right"
+                                                                buttonYesText="Sim"
+                                                                buttonNoText="Não"
+                                                            />
+                                                        </section>
                                                     ) : material.status === "Pausado" ? (
                                                         <Button
                                                             variant="ghost"
@@ -410,7 +424,7 @@ export default function MaterialsHomePage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => {
-                                                            setShow(true);
+                                                            setShowDelete(true);
                                                         }}
                                                         disabled={String(actionLoading).includes(material._id)}
                                                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
@@ -423,8 +437,8 @@ export default function MaterialsHomePage() {
                                                     </Button>
                                                     <ConfirmToast
                                                         customFunction={() => handleDelete(material._id)}
-                                                        setShowConfirmToast={setShow}
-                                                        showConfirmToast={show}
+                                                        setShowConfirmToast={setShowDelete}
+                                                        showConfirmToast={showDelete}
                                                         toastText="Deseja excluir este material?"
                                                         position="top-right"
                                                         buttonYesText="Sim"
