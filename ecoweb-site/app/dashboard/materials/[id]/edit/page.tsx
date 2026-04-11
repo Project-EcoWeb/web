@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "c
 import { Upload, X, Save, ArrowLeft, Loader2, ReceiptRussianRuble } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
-import { toast } from "sonner"
 import { useRouter, useParams } from "next/navigation"
+import { toast, Bounce, TypeOptions, ToastContainer } from "react-toastify"
 import { useAuth } from "@/context/authContext"
 import { getMaterialById, updateMaterialById } from "@/services/materialServices"
 
@@ -51,6 +51,35 @@ export default function EditMaterialPage() {
     })
     const [errors, setErrors] = useState<Record<string, string>>({})
 
+    const notify = (message: string, type: TypeOptions) => {
+        toast(message, {
+            position: "top-center",
+            autoClose: 2500,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+            type: type
+        })
+    }
+
+    const notifyPromisse = async (resource: () => Promise<any>) => {
+        toast.promise(resource(), {
+            pending: "Atualizando material...",
+            success: "Material atualizado com sucesso!",
+            error: "Erro ao atualizar material"
+        }, {
+            position: "top-center",
+            autoClose: 1000,
+            theme: "light",
+            transition: Bounce
+        });
+    };
+
+
     useEffect(() => {
         const fetchMaterial = async () => {
 
@@ -74,15 +103,12 @@ export default function EditMaterialPage() {
                         fotos: material.fotos || [],
                     })
                 } else {
-                    toast.error("Erro", {
-                        description: "Material não encontrado",
-                    })
+                    notify("Material não encontrado", "error")
                     router.push("/dashboard")
                 }
             } catch (error) {
-                toast.error("Erro", {
-                    description: "Erro ao carregar material",
-                })
+                notify("Erro ao carregar material", "error")
+                router.push("/dashboard")
             } finally {
                 setInitialLoading(false)
             }
@@ -107,16 +133,12 @@ export default function EditMaterialPage() {
             const isValidSize = file.size <= 5 * 1024 * 1024 
 
             if (!isValidType) {
-                toast.error("Erro", {
-                    description: `${file.name} não é uma imagem válida`,
-                })
+                notify(`${file.name} não é uma imagem válida`, "error");
                 return false
             }
 
             if (!isValidSize) {
-                toast.error("Erro", {
-                    description: `${file.name} é muito grande (máximo 5MB)`,
-                })
+                notify(`${file.name} é muito grande (máximo 5MB)`, "error");
                 return false
             }
 
@@ -149,16 +171,15 @@ export default function EditMaterialPage() {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = async () => {
+    const handleSubmitWithPromisse = async () => {
         if (!validateForm()) {
-            toast.error("Erro de validação", {
-                description: "Por favor, corrija os campos obrigatórios",
-            })
+            notify("Por favor, corrija os campos obrigatórios", "error");
             return
         }
         
         if (!token) {
-            toast.error('Autenticação Necessária')
+            notify('Autenticação Necessária', "error");
+            setTimeout(() => router.push('/login'), 1500);
             return
         }
             
@@ -166,32 +187,19 @@ export default function EditMaterialPage() {
 
         
         try {
-            const formData = {
-                ...form,
-                quantidade: `${form.quantity} ${form.unitOfMeasure}`,
-                fotos: form.fotos.map((file) =>
-                    typeof file === "string"
-                        ? file
-                        : `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(file.name)}`,
-                ),
-            }
 
-            const response = await updateMaterialById(materialId, form, token)
+            await notifyPromisse(async () => {
+                const response = await updateMaterialById(materialId, form, token)
+         
+                if (!response || response.status !== 200) {
+                    throw new Error(response?.data?.message || "Não foi possível atualizar o material");   
+                }
 
-            if (response.status === 200) {
-                toast.success("Sucesso", {
-                    description: "Material atualizado com sucesso!",
-                })
-                router.push("/dashboard")
-            } else {
-                toast.error("Erro", {
-                    description: response.data.message || "Não foi possível atualizar o material",
-                })
-            }
-        } catch (error) {
-            toast.error("Erro", {
-                description: "Erro de conexão ao atualizar material",
             })
+
+            setTimeout(() => router.push("/dashboard"), 2500);
+        } catch (error) {
+            notify(error instanceof Error ? error.message : "Erro ao atualizar material", "error");
         } finally {
             setLoading(false)
         }
@@ -384,11 +392,11 @@ export default function EditMaterialPage() {
                 </Card>
 
                 <div className="flex gap-4">
-                    <Button onClick={handleSubmit} disabled={loading} className="flex-1" size="lg">
+                    <Button onClick={handleSubmitWithPromisse} disabled={loading} className="flex-1" size="lg">
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Salvar Alterações
                     </Button>
-
+                    <ToastContainer />
                     <Button variant="outline" asChild className="flex-1 bg-transparent" size="lg">
                         <Link href="/dashboard">Cancelar</Link>
                     </Button>
