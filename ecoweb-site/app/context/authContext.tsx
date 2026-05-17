@@ -33,21 +33,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (credentials: any) => {
-    try {
       const response = await loginCompany(credentials)
 
-      if (!response || !response.token) {
-        return;
+    
+      if (!response && !response.token) {
+        throw new Error("Erro de conexão com servidor");
       }
-
+    
+    if (response && !response.token) {
+      throw new Error(response.message);
+      }
+    
       const new_token = response.token;
 
       Cookies.set('authToken', new_token, { expires: 3, path: '/' });
       setToken(new_token);
       
-    } catch (error) {
-      alert("Erro ao fazer login. Verifique suas credenciais e tente novamente.")
-    }
   }
 
   const logout = () => {
