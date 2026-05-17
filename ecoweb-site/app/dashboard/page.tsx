@@ -22,7 +22,7 @@ import {
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/context/authContext"
-import { getMaterials, deleteMaterialById, updateStatusByMaterialId } from "@/services/materialServices"
+import { getMaterials, deleteMaterialById, updateStatusByMaterialId, getMaterialsByStatusOrName } from "@/services/materialServices"
 import { TypeOptions, Bounce, toast, ToastContainer } from "react-toastify"
 import { ConfirmToast } from 'react-confirm-toast'
 
@@ -84,9 +84,6 @@ export default function MaterialsHomePage() {
         if (!token) return;
         try {
             setPageLoading(true)
-            const params: { search?: string; status?: string } = {};
-            if (searchTerm) params.search = searchTerm;
-            if (statusFilter !== "all") params.status = statusFilter;
 
             const response = await getMaterials(token);
             if (response.status === 200) {
@@ -105,7 +102,7 @@ export default function MaterialsHomePage() {
         if (!isLoading) {
             fetchMaterials();
         }
-    }, [isLoading, searchTerm, statusFilter, token])
+    }, [isLoading, token])
 
     if (isLoading) {
         return (
@@ -115,6 +112,22 @@ export default function MaterialsHomePage() {
             </div>
         );
     }
+
+    const filteredMaterials = async () => {
+        if (!token) return;
+        try {
+            const response = await getMaterialsByStatusOrName(statusFilter, searchTerm, token);
+
+            if (response.status === 200) {
+                setMaterials(response.data);
+                console.log(response.data)
+            } else notify('Não foi possível carregar os materiais', 'error');
+        } catch (error: any) {
+            notify(`Erro de conexão ao carregar materiais: ${error.message}`, 'error');
+        } finally {
+            setLoading(false)
+        }
+    }
     
     const handleStatusChange = async (materialId: string, newStatus: string) => {
 
@@ -122,10 +135,6 @@ export default function MaterialsHomePage() {
             notify('Você não está autenticado.', 'error');
             return;
         }
-
-        // if (!window.confirm("Tem certeza que deseja alterar o status este material?")) {
-        //     return;
-        // }
 
         try {
             setActionLoading(materialId)
@@ -153,10 +162,6 @@ export default function MaterialsHomePage() {
             notify('Você não está autenticado.', 'error');
             return;
         }
-
-        // if (!window.confirm("Tem certeza que deseja excluir este material? Esta ação não pode ser desfeita.")) {
-        //     return;
-        // }
 
         try {
             setActionLoading(materialId);
@@ -231,7 +236,7 @@ export default function MaterialsHomePage() {
                                         <TrendingUp className="h-5 w-5 text-chart-3" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{materials.filter((m) => m.status === "Doado").length}</p>
+                                        <p className="text-2xl font-bold">{materials.filter((m) => m.status === "doado").length}</p>
                                         <p className="text-sm text-muted-foreground">Doações Realizadas</p>
                                     </div>
                                 </div>
@@ -250,12 +255,12 @@ export default function MaterialsHomePage() {
                                 <Input
                                     placeholder="Buscar materiais..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onInput={(value) => setSearchTerm(value.currentTarget.value)}
                                     className="pl-10 bg-background/50 border-border/50"
                                 />
                             </div>
                         </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
                             <SelectTrigger className="w-full sm:w-[200px] bg-background/50 border-border/50">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
@@ -267,6 +272,12 @@ export default function MaterialsHomePage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <div className="flex items-center justify-end">
+                            <button className="inline-center items-center gap-1 bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90"
+                                onClick={() => filteredMaterials()}>
+                                Buscar
+                            </button>
+                        </div>  
                     </div>
                 </CardContent>
             </Card>
@@ -362,7 +373,7 @@ export default function MaterialsHomePage() {
                                                         </Link>
                                                     </Button>
 
-                                                    {material.status === "Publicado" ? (
+                                                    {material.status === "publicado" ? (
                                                         <section>
                                                             <Button
                                                                 variant="ghost"
@@ -380,7 +391,7 @@ export default function MaterialsHomePage() {
                                                                 )}
                                                             </Button>
                                                             <ConfirmToast
-                                                                customFunction={() => { handleStatusChange(material._id, 'Pausado')}}
+                                                                customFunction={() => { handleStatusChange(material._id, 'pausado')}}
                                                                 setShowConfirmToast={setShowBreak}
                                                                 showConfirmToast={showBreak}
                                                                 toastText="Deseja pausar a publicação deste material?"
@@ -389,11 +400,11 @@ export default function MaterialsHomePage() {
                                                                 buttonNoText="Não"
                                                             />
                                                         </section>
-                                                    ) : material.status === "Pausado" ? (
+                                                    ) : material.status === "pausado" ? (
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleStatusChange(material._id, "Publicado")}
+                                                            onClick={() => handleStatusChange(material._id, "publicado")}
                                                             disabled={String(actionLoading).includes(material._id)}
                                                             className="h-8 w-8 p-0"
                                                         >
@@ -405,7 +416,7 @@ export default function MaterialsHomePage() {
                                                         </Button>
                                                     ) : null}
 
-                                                    {material.status !== "Doado" && (
+                                                    {material.status !== "doado" && (
                                                         <section>
                                                         <Button
                                                             variant="ghost"
@@ -421,7 +432,7 @@ export default function MaterialsHomePage() {
                                                             )}
                                                         </Button>
                                                         <ConfirmToast
-                                                            customFunction={() => handleStatusChange(material._id, "Doado")}
+                                                            customFunction={() => handleStatusChange(material._id, "doado")}
                                                             setShowConfirmToast={setShowDonated}
                                                             showConfirmToast={showDonated}
                                                             toastText="Deseja marcar como doado?"

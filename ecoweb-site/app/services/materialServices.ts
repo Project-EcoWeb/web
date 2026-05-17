@@ -109,3 +109,17 @@ export async function updateStatusByMaterialId(id: string, status: string, token
         throw new Error('Erro de conexão ao excluir o material');
     }
 }
+
+export async function getMaterialsByStatusOrName(status: string, name:string, token: string) {
+    try {
+        const response = await api.get(`/materials/search?status=${status}&name=${name}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.message || 'Falha ao listar os materiais');
+        }
+        throw new Error('Erro de conexão ao listar os materiais');
+    }
+}
