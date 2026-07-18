@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API;
+
 export const api = axios.create({
-    baseURL: "https://api-76y3.onrender.com"
+    baseURL: API_BASE_URL
 })
