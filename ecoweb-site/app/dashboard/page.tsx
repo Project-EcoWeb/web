@@ -120,7 +120,6 @@ export default function MaterialsHomePage() {
 
             if (response.status === 200) {
                 setMaterials(response.data);
-                console.log(response.data)
             } else notify('Não foi possível carregar os materiais', 'error');
         } catch (error: any) {
             notify(`Erro de conexão ao carregar materiais: ${error.message}`, 'error');
