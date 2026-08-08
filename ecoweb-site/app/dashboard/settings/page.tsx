@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import DashboardLayout from "../layout"
+import { useEffect, useState } from "react"
+import { getCompanyData } from "@/services/companyService"
+import { useAuth } from "@/context/authContext"
 
 export default function DashboardSettings() {
     return (
@@ -10,17 +11,45 @@ export default function DashboardSettings() {
 }
 
 function SettingsPageContent() {
+    const { token } = useAuth()
     const [isEditing, setIsEditing] = useState(false)
 
+
     const [formData, setFormData] = useState({
-        name: "EcoWeb Soluções Ambientais",
-        cnpj: "12.345.678/0001-99",
-        phone: "(11) 99999-9999",
-        location: "São Paulo, SP",
-        cep: "01000-000",
-        email: "contato@ecoweb.com",
-        responsibleName: "João Silva",
+        name: "Nome da Instituição",
+        cnpj: "CNPJ da Instituição",
+        phone: "Telefone da Instituição",
+        location: "Localização da Instituição",
+        cep: "CEP da Instituição",
+        email: "E-mail da Instituição",
+        responsibleName: "Nome do Responsável",
     })
+
+    useEffect(() => {
+
+        const companyData = getCompanyData(token|| "").then((data) => {
+            return data;
+        }).catch((error) => {
+            console.error('Erro ao obter dados da empresa:', error);
+        });
+
+        if (companyData) {
+            companyData.then((data) => {
+                if (data) {
+                    setFormData({
+                        name: data.name,
+                        cnpj: data.cnpj,
+                        phone: data.phone,
+                        location: data.location,
+                        cep: data.cep,
+                        email: data.email,
+                        responsibleName: data.responsibleName,
+                    });
+                }
+            });
+        }
+
+    }, [token]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
