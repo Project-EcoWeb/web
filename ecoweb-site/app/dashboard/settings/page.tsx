@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getCompanyData } from "@/services/companyService"
+import { toast, Bounce, TypeOptions, ToastContainer } from "react-toastify"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/authContext"
+import { getCompanyData, updateCompanyData } from "@/services/companyService"
+
 
 export default function DashboardSettings() {
     return (
@@ -12,6 +15,7 @@ export default function DashboardSettings() {
 
 function SettingsPageContent() {
     const { token } = useAuth()
+    const router = useRouter()
     const [isEditing, setIsEditing] = useState(false)
 
 
@@ -23,6 +27,7 @@ function SettingsPageContent() {
         cep: "CEP da Instituição",
         email: "E-mail da Instituição",
         responsibleName: "Nome do Responsável",
+        password: ""
     })
 
     useEffect(() => {
@@ -44,6 +49,7 @@ function SettingsPageContent() {
                         cep: data.cep,
                         email: data.email,
                         responsibleName: data.responsibleName,
+                        password: ""
                     });
                 }
             });
@@ -56,9 +62,55 @@ function SettingsPageContent() {
         setFormData((prev) => ({ ...prev, [name]: value }))
     }
 
-    const handleSave = () => {
-        console.log("Saving data:", formData)
-        setIsEditing(false)
+    const notify = (message: string, type: TypeOptions) => {
+        toast(message, {
+            position: "top-center",
+            autoClose: 2500,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+            type: type
+        })
+    }
+
+    const notifyPromisse = async (resource: () => Promise<any>) => {
+            toast.promise(resource(), {
+                pending: "Atualizando informações...",
+                success: "Informações atualizadas com sucesso!",
+                error: "Erro ao atualizar informações"
+            }, {
+                position: "top-center",
+                autoClose: 1000,
+                theme: "light",
+                transition: Bounce
+            });
+    };
+
+    const handleSave = async () => {
+
+        try {
+
+            await notifyPromisse(async () => {
+                const response = await updateCompanyData(token || "", formData);
+            
+                if (response && response.status !== 204) {
+                    throw new Error(response?.data?.message || "Não foi possível atualizar o material");   
+                }
+
+            })
+
+            setTimeout(() => {
+                setIsEditing(false)
+                window.location.reload()
+            }, 1500);
+        } catch (error) {
+            notify(error instanceof Error ? error.message : "Erro ao atualizar material", "error");
+        }
+
     }
 
     return (
@@ -93,6 +145,7 @@ function SettingsPageContent() {
                                 >
                                     Salvar
                                 </button>
+                                <ToastContainer></ToastContainer>
                             </div>
                         ) : (
                             <button

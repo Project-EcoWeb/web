@@ -84,3 +84,31 @@ export async function getCompanyData(token: string) {
         }
     }
 }
+
+export async function updateCompanyData(token: string, company: CompanyData) {
+    try {
+
+        if(!token) {
+            console.log('Token não fornecido');
+            return;
+        }
+
+        const response = await api.patch("institutions/", company, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 200) {
+            console.log('Dados da empresa atualizados com sucesso');
+            return response;
+        }
+
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            console.log(error.response.data.message || 'Falha ao atualizar dados da empresa');
+        } else {
+            console.log('Erro na conexão com servidor');
+        }
+    }
+}
