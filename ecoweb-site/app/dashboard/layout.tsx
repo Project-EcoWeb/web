@@ -3,6 +3,7 @@
 import type React from "react"
 import { Package, MessageCircle, BarChart3, Settings, LogOut, User } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "components/ui/button"
 import { Avatar, AvatarFallback } from "components/ui/avatar"
 import {
@@ -39,17 +40,20 @@ export default function DashboardLayout({
     }) {
     
     const { logout } = useAuth();
+    const pathname = usePathname()
+
+    const isActiveRoute = (url: string) =>
+        url === "/dashboard" ? pathname === url : pathname.startsWith(url)
         
     return (
         <div className="min-h-screen bg-background">
             <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container flex h-16 items-center justify-between px-6">
+                <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
                     {/* Logo and Brand */}
                     <div className="flex items-center gap-6">
                         <Link href="/dashboard" className="flex items-center gap-2">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg ">
-                                <Package className="h-4 w-4" />
-                                <img src="/logo-transparent.png" alt="" />
+                                <img src="/logo-transparent.png" alt="Logo EcoWeb" className="h-8 w-8 object-contain" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-sm font-semibold">EcoWeb</span>
@@ -62,10 +66,13 @@ export default function DashboardLayout({
                             {navigation.map((item) => (
                                 <Button
                                     key={item.title}
-                                    variant="ghost"
+                                    variant={isActiveRoute(item.url) ? "secondary" : "ghost"}
                                     size="sm"
                                     asChild
-                                    className="text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                    className={isActiveRoute(item.url)
+                                        ? "bg-accent/60 text-foreground"
+                                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                    }
                                 >
                                     <Link href={item.url} className="flex items-center gap-2">
                                         <item.icon className="h-4 w-4" />
@@ -88,6 +95,19 @@ export default function DashboardLayout({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56" align="end" forceMount>
+                            {navigation.map((item) => (
+                                <DropdownMenuItem
+                                    key={item.title}
+                                    asChild
+                                    className={`md:hidden ${isActiveRoute(item.url) ? "bg-accent text-foreground" : ""}`}
+                                >
+                                    <Link href={item.url} className="flex items-center gap-2">
+                                        <item.icon className="h-4 w-4" />
+                                        <span>{item.title}</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator className="md:hidden" />
                             <DropdownMenuItem asChild>
                                 <Link href="/dashboard/settings" className="flex items-center gap-2">
                                     <Settings className="h-4 w-4" />
@@ -107,7 +127,7 @@ export default function DashboardLayout({
                 </div>
             </header>
 
-            <main className="container mx-auto px-6 py-8">{children}</main>
+            <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8">{children}</main>
         </div>
     )
 }

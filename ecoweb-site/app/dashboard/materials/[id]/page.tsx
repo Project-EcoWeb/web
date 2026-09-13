@@ -246,7 +246,6 @@ export default function MaterialDetailPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Interest Stats */}
                         <Card className="border-border/50 bg-card/50 backdrop-blur">
                             <CardHeader>
                                 <CardTitle className="text-lg">Interesse</CardTitle>
@@ -254,19 +253,17 @@ export default function MaterialDetailPage() {
                             <CardContent>
                                 <div className="text-center space-y-4">
                                     <div>
-                                        <div className="text-4xl font-bold text-primary mb-2">{material.interessados}</div>
+                                        <div className="text-4xl font-bold text-primary mb-2">{material.interessados ?? 0}</div>
                                         <p className="text-sm text-muted-foreground">
-                                            {material.interessados === 1 ? "pessoa interessada" : "pessoas interessadas"}
+                                            {(material.interessados ?? 0) === 1 ? "pessoa interessada" : "pessoas interessadas"}
                                         </p>
                                     </div>
-                                    {material.interessados > 0 && (
-                                        <Button className="w-full" asChild>
-                                            <Link href={`/dashboard/inbox?material=${material.id}`}>
-                                                <MessageCircle className="h-4 w-4 mr-2" />
-                                                Ver Mensagens
-                                            </Link>
-                                        </Button>
-                                    )}
+                                    <Button className="w-full" asChild>
+                                        <Link href="/dashboard/inbox">
+                                            <MessageCircle className="h-4 w-4 mr-2" />
+                                            Ver mensagens demonstrativas
+                                        </Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

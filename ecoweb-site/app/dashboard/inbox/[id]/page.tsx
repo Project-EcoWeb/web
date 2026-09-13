@@ -10,185 +10,73 @@ import { Textarea } from "components/ui/textarea"
 import { ScrollArea } from "components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "components/ui/avatar"
 import { ArrowLeft, Calendar, CheckCircle, X, Archive, Send, Loader2, Package, Clock } from "lucide-react"
-import Link from "next/link"
-import { toast } from "sonner"
-
-interface Message {
-  id: string
-  sender: "company" | "interested"
-  content: string
-  timestamp: string
-  read: boolean
-}
-
-interface Conversation {
-  id: string
-  interestedPartyName: string
-  interestedPartyType: "ong" | "creator" | "individual"
-  materialName: string
-  materialId: string
-  lastMessage: string
-  lastMessageTime: string
-  unreadCount: number
-  status: "active" | "scheduled" | "completed" | "rejected" | "archived"
-  messages: Message[]
-}
+import { getMockConversations, type MockConversation, type MockMessage } from "@/lib/dashboardMocks"
 
 export default function ConversationDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const [conversation, setConversation] = useState<Conversation | null>(null)
+  const [conversation, setConversation] = useState<MockConversation | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isTyping, setIsTyping] = useState(false)
 
   useEffect(() => {
-    fetchConversation()
+    const selectedConversation = getMockConversations().find((item) => item.id === params.id)
+
+    if (selectedConversation) {
+      setConversation(selectedConversation)
+    } else {
+      router.push("/dashboard/inbox")
+    }
+    setLoading(false)
   }, [params.id])
 
-  const fetchConversation = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/mensagens/${params.id}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setConversation(data.data)
-      } else {
-        toast.error("Erro", {
-          description: "Conversa não encontrada",
-        })
-        router.push("/dashboard/inbox")
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao carregar conversa",
-      })
-      router.push("/dashboard/inbox")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!newMessage.trim() || !conversation) return
 
     setIsTyping(true)
 
-    try {
-      const response = await fetch(`/api/mensagens/${conversation.id}/reply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage }),
-      })
+    const message: MockMessage = {
+      id: `demo-mensagem-${Date.now()}`,
+      sender: "company",
+      content: newMessage.trim(),
+      timestamp: "Agora",
+      read: true,
+    }
 
-      if (response.ok) {
-        const updatedMessage = await response.json()
-        setConversation((prev) =>
-          prev
-            ? {
-                ...prev,
-                messages: [...prev.messages, updatedMessage],
-              }
-            : null,
-        )
-        setNewMessage("")
-        toast("Mensagem enviada", {
-          description: "Sua mensagem foi enviada com sucesso",
-        })
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao enviar mensagem",
-      })
-    } finally {
+    setConversation({
+      ...conversation,
+      messages: [...conversation.messages, message],
+      lastMessage: message.content,
+      lastMessageTime: message.timestamp,
+      unreadCount: 0,
+    })
+    setNewMessage("")
+
+    window.setTimeout(() => {
       setIsTyping(false)
-    }
+    }, 350)
   }
 
-  const schedulePickup = async () => {
+  const schedulePickup = () => {
     if (!conversation) return
-
-    try {
-      const response = await fetch(`/api/mensagens/${conversation.id}/schedule`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        setConversation((prev) => (prev ? { ...prev, status: "scheduled" } : null))
-        toast("Coleta agendada", {
-          description: "A coleta foi agendada com sucesso",
-        })
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao agendar coleta",
-      })
-    }
+    setConversation({ ...conversation, status: "scheduled" })
   }
 
-  const confirmDonation = async () => {
+  const confirmDonation = () => {
     if (!conversation) return
-
-    try {
-      const response = await fetch(`/api/mensagens/${conversation.id}/confirm`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        setConversation((prev) => (prev ? { ...prev, status: "completed" } : null))
-        toast("Doação confirmada", {
-          description: "A doação foi confirmada com sucesso",
-        })
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao confirmar doação",
-      })
-    }
+    setConversation({ ...conversation, status: "completed" })
   }
 
-  const rejectProposal = async () => {
+  const rejectProposal = () => {
     if (!conversation) return
-
-    try {
-      const response = await fetch(`/api/mensagens/${conversation.id}/reject`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        setConversation((prev) => (prev ? { ...prev, status: "rejected" } : null))
-        toast("Proposta rejeitada", {
-          description: "A proposta foi rejeitada",
-        })
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao rejeitar proposta",
-      })
-    }
+    setConversation({ ...conversation, status: "rejected" })
   }
 
-  const archiveConversation = async () => {
+  const archiveConversation = () => {
     if (!conversation) return
-
-    try {
-      const response = await fetch(`/api/mensagens/${conversation.id}/archive`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        toast("Conversa arquivada", {
-          description: "A conversa foi arquivada com sucesso",
-        })
-        router.push("/dashboard/inbox")
-      }
-    } catch (error) {
-      toast.error("Erro", {
-        description: "Erro ao arquivar conversa",
-      })
-    }
+    router.push("/dashboard/inbox")
   }
 
   const getStatusBadge = (status: string) => {
@@ -259,6 +147,7 @@ export default function ConversationDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-semibold">{conversation.interestedPartyName}</h1>
+                  <Badge variant="outline">Dados demonstrativos</Badge>
                   <div className="text-lg">{getPartyTypeIcon(conversation.interestedPartyType)}</div>
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -270,11 +159,9 @@ export default function ConversationDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             {getStatusBadge(conversation.status)}
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/dashboard/materials/${conversation.materialId}`}>
-                <Package className="h-4 w-4 mr-2" />
-                Ver Material
-              </Link>
+            <Button variant="outline" size="sm" disabled>
+              <Package className="h-4 w-4 mr-2" />
+              Material demonstrativo
             </Button>
           </div>
         </div>
