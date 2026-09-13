@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card"
 import { Button } from "components/ui/button"
+import { Badge } from "components/ui/badge"
 import { Input } from "components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "components/ui/tooltip"
 import {
     Plus,
     Search,
@@ -15,9 +17,9 @@ import {
     Trash2,
     Loader2,
     MessageCircle,
+    BarChart3,
     Package,
     TrendingUp,
-    Clock,
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -25,6 +27,7 @@ import { useAuth } from "@/context/authContext"
 import { getMaterials, deleteMaterialById, updateStatusByMaterialId, getMaterialsByStatusOrName } from "@/services/materialServices"
 import { TypeOptions, Bounce, toast, ToastContainer } from "react-toastify"
 import { ConfirmToast } from 'react-confirm-toast'
+import { getMockReportData, MOCK_DASHBOARD_SUMMARY } from "@/lib/dashboardMocks"
 
 interface Material {
     _id: string
@@ -43,28 +46,40 @@ interface Material {
 
 
 const statusLabels = {
-    all: "Todos os Status",
+    all: "Todos os status",
     publicado: "Publicado",
     pausado: "Pausado",
     doado: "Doado",
+}
+
+const mockReportSummary = getMockReportData("ultimo-trimestre")
+
+type PendingAction = {
+    type: "pause" | "donate" | "delete"
+    materialId: string
+} | null
+
+const statusConfig = {
+    publicado: { label: "Publicado", variant: "default" as const },
+    pausado: { label: "Pausado", variant: "outline" as const },
+    doado: { label: "Doado", variant: "secondary" as const },
 }
 
 export default function MaterialsHomePage() {
     const { token, isLoading } = useAuth();
     const [materials, setMaterials] = useState<Material[]>([])
     const [pageLoading, setPageLoading] = useState(true)
-    const [loading, setLoading] = useState(true)
+    const [isFiltering, setIsFiltering] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [actionLoading, setActionLoading] = useState<string | null>(null)
-    const [showDelete, setShowDelete] = useState(false);
-    const [showBreak, setShowBreak] = useState(false);
-    const [showDonated, setShowDonated] = useState(false);
+    const [pendingAction, setPendingAction] = useState<PendingAction>(null)
+    const [showActionConfirmation, setShowActionConfirmation] = useState(false)
 
     const notify = (message: string, type: TypeOptions) => {
         toast(message, {
             position: "top-center",
-            autoClose: 800,
+            autoClose: 2500,
             hideProgressBar: true,
             closeOnClick: true,
             pauseOnHover: false,
@@ -76,9 +91,6 @@ export default function MaterialsHomePage() {
         })
     }
 
-    function myFunction() {
-        alert('done');
-    }
     const fetchMaterials = async () => {
 
         if (!token) return;
@@ -113,9 +125,10 @@ export default function MaterialsHomePage() {
         );
     }
 
-    const filteredMaterials = async () => {
+    const filterMaterials = async () => {
         if (!token) return;
         try {
+            setIsFiltering(true)
             const response = await getMaterialsByStatusOrName(statusFilter, searchTerm, token);
 
             if (response.status === 200) {
@@ -124,7 +137,7 @@ export default function MaterialsHomePage() {
         } catch (error: any) {
             notify(`Erro de conexão ao carregar materiais: ${error.message}`, 'error');
         } finally {
-            setLoading(false)
+            setIsFiltering(false)
         }
     }
     
@@ -142,7 +155,7 @@ export default function MaterialsHomePage() {
 
             if (response.status === 200) {
                 setMaterials((prev) =>
-                    prev.map((material) => (material._id.includes(String(materialId)) ? { ...material, status: newStatus } : material)),
+                    prev.map((material) => (material._id === materialId ? { ...material, status: newStatus } : material)),
                 )
 
                 notify(`Material ${newStatus.toLowerCase()} com sucesso!`, 'success');
@@ -180,10 +193,43 @@ export default function MaterialsHomePage() {
         }
     };
 
+    const openActionConfirmation = (action: Exclude<PendingAction, null>) => {
+        setPendingAction(action)
+        setShowActionConfirmation(true)
+    }
+
+    const handleConfirmedAction = async () => {
+        if (!pendingAction) return
+
+        const action = pendingAction
+        setPendingAction(null)
+
+        if (action.type === "delete") {
+            await handleDelete(action.materialId)
+            return
+        }
+
+        await handleStatusChange(action.materialId, action.type === "pause" ? "pausado" : "doado")
+    }
+
+    const getConfirmationText = () => {
+        if (pendingAction?.type === "pause") return "Deseja pausar a publicação deste material?"
+        if (pendingAction?.type === "donate") return "Deseja marcar este material como doado?"
+        return "Deseja excluir este material?"
+    }
+
+    const getMaterialStatus = (status: string) =>
+        statusConfig[status?.toLowerCase() as keyof typeof statusConfig] ?? {
+            label: status || "Não informado",
+            variant: "outline" as const,
+        }
+
+    const activeMaterialsCount = materials.filter((material) => material.status?.toLowerCase() === "publicado").length
+
     return (
         <div className="space-y-8">
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-bold tracking-tight text-balance">Meus Materiais</h1>
                         {/* <p className="text-lg text-muted-foreground text-pretty">
@@ -198,38 +244,43 @@ export default function MaterialsHomePage() {
                     </Button>
                 </div>
 
-                <div className=" flex items-center justify-center">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mx:auto">
-                        <Card className="border-border/50 bg-card/50 backdrop-blur">
-                            <CardContent className="p-6">
+                <div className="space-y-3">
+                    <div className="flex justify-end">
+                        <Badge variant="outline" className="text-muted-foreground">
+                            Mensagens e impacto usam dados demonstrativos
+                        </Badge>
+                    </div>
+                    <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <Card className="border-border/50 bg-card/50 py-0 backdrop-blur">
+                            <CardContent className="p-5">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <Package className="h-5 w-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{materials.length}</p>
+                                        <p className="text-2xl font-bold">{activeMaterialsCount}</p>
                                         <p className="text-sm text-muted-foreground">Materiais Ativos</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-border/50 bg-card/50 backdrop-blur">
-                            <CardContent className="p-6">
+                        <Card className="border-border/50 bg-card/50 py-0 backdrop-blur">
+                            <CardContent className="p-5">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-chart-2/10 rounded-lg">
                                         <MessageCircle className="h-5 w-5 text-chart-2" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{/*materials.reduce((acc, m) => acc + m.interessados, 0)*/}</p>
-                                        <p className="text-sm text-muted-foreground">Mensagens Recebidas</p>
+                                        <p className="text-2xl font-bold">{MOCK_DASHBOARD_SUMMARY.totalMessages}</p>
+                                        <p className="text-sm text-muted-foreground">Mensagens</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-border/50 bg-card/50 backdrop-blur">
-                            <CardContent className="p-6">
+                        <Card className="border-border/50 bg-card/50 py-0 backdrop-blur">
+                            <CardContent className="p-5">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-chart-3/10 rounded-lg">
                                         <TrendingUp className="h-5 w-5 text-chart-3" />
@@ -241,13 +292,33 @@ export default function MaterialsHomePage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card className="border-border/50 bg-card/50 py-0 backdrop-blur">
+                            <CardContent className="p-5">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-chart-4/10 rounded-lg">
+                                        <BarChart3 className="h-5 w-5 text-chart-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold">{mockReportSummary.co2Evitado} ton</p>
+                                        <p className="text-sm text-muted-foreground">CO₂ evitado</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
 
-            <Card className="border-border/50 bg-card/50 backdrop-blur">
-                <CardContent className="p-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
+            <Card className="border-border/50 bg-card/50 py-0 backdrop-blur">
+                <CardContent className="p-5">
+                    <form
+                        className="flex flex-col gap-4 sm:flex-row"
+                        onSubmit={(event) => {
+                            event.preventDefault()
+                            filterMaterials()
+                        }}
+                    >
                         <div className="flex-1">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -271,13 +342,11 @@ export default function MaterialsHomePage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center justify-end">
-                            <button className="inline-center items-center gap-1 bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90"
-                                onClick={() => filteredMaterials()}>
-                                Buscar
-                            </button>
-                        </div>  
-                    </div>
+                        <Button type="submit" disabled={isFiltering}>
+                            {isFiltering && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {isFiltering ? "Buscando..." : "Buscar"}
+                        </Button>
+                    </form>
                 </CardContent>
             </Card>
 
@@ -313,21 +382,21 @@ export default function MaterialsHomePage() {
                             </Button>
                         </div>
                     ) : (
-                        <div className="rounded-lg border border-border/50 overflow-hidden">
-                            <Table>
+                        <div className="rounded-lg border border-border/50">
+                            <Table className="min-w-[640px] md:min-w-full">
                                 <TableHeader>
                                     <TableRow className="border-border/50 hover:bg-muted/20">
                                         <TableHead className="font-semibold">Material</TableHead>
-                                        <TableHead className="font-semibold">Data</TableHead>
+                                        <TableHead className="hidden font-semibold md:table-cell">Atualizado em</TableHead>
                                         <TableHead className="font-semibold">Status</TableHead>
-                                        <TableHead className="font-semibold">Interessados</TableHead>
+                                        <TableHead className="hidden font-semibold lg:table-cell">Interessados</TableHead>
                                         <TableHead className="text-right font-semibold">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {materials.map((material) => (
                                         <TableRow key={material._id} className="border-border/50 hover:bg-muted/10 transition-colors">
-                                            <TableCell>
+                                            <TableCell className="min-w-[240px]">
                                                 <Link
                                                     href={`/dashboard/materials/${material._id}`}
                                                     className="flex items-center gap-4 hover:opacity-80 transition-opacity"
@@ -347,13 +416,18 @@ export default function MaterialsHomePage() {
                                                     </div>
                                                 </Link>
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground">
+                                            <TableCell className="hidden text-muted-foreground md:table-cell">
                                                 {new Date(material.updatedAt).toLocaleDateString("pt-BR")}
                                             </TableCell>
                                             <TableCell>
-                                                {material.interessados > 0 ? (
+                                                <Badge variant={getMaterialStatus(material.status).variant}>
+                                                    {getMaterialStatus(material.status).label}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="hidden lg:table-cell">
+                                                {(material.interessados ?? 0) > 0 ? (
                                                     <Button variant="ghost" size="sm" asChild className="h-auto p-0 font-normal">
-                                                        <Link href={`/dashboard/inbox?material=${material._id}`}>
+                                                        <Link href="/dashboard/inbox">
                                                             <div className="flex items-center gap-2 text-primary hover:text-primary/80">
                                                                 <MessageCircle className="h-4 w-4" />
                                                                 <span>{material.interessados} mensagens</span>
@@ -361,111 +435,108 @@ export default function MaterialsHomePage() {
                                                         </Link>
                                                     </Button>
                                                 ) : (
-                                                    <span className="text-muted-foreground">{material.interessados}</span>
+                                                    <span className="text-muted-foreground">0</span>
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
-                                                        <Link href={`/dashboard/materials/${material._id}/edit`}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
+                                                                <Link
+                                                                    href={`/dashboard/materials/${material._id}/edit`}
+                                                                    aria-label={`Editar ${material.name}`}
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Editar</TooltipContent>
+                                                    </Tooltip>
 
                                                     {material.status === "publicado" ? (
-                                                        <section>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => openActionConfirmation({ type: "pause", materialId: material._id })}
+                                                                    disabled={actionLoading === material._id}
+                                                                    className="h-8 w-8 p-0"
+                                                                    aria-label={`Pausar ${material.name}`}
+                                                                >
+                                                                    {actionLoading === material._id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Pause className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Pausar publicação</TooltipContent>
+                                                        </Tooltip>
+                                                    ) : material.status === "pausado" ? (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                onClick={() => {
-                                                                    setShowBreak(true);
-                                                                }}
-                                                                disabled={String(actionLoading).includes(material._id)}
+                                                                onClick={() => handleStatusChange(material._id, "publicado")}
+                                                                disabled={actionLoading === material._id}
                                                                 className="h-8 w-8 p-0"
+                                                                aria-label={`Publicar ${material.name}`}
                                                             >
-                                                                {String(actionLoading).includes(material._id) ? (
+                                                                {actionLoading === material._id ? (
                                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                                 ) : (
-                                                                    <Pause className="h-4 w-4" />
+                                                                    <Play className="h-4 w-4" />
                                                                 )}
                                                             </Button>
-                                                            <ConfirmToast
-                                                                customFunction={() => { handleStatusChange(material._id, 'pausado')}}
-                                                                setShowConfirmToast={setShowBreak}
-                                                                showConfirmToast={showBreak}
-                                                                toastText="Deseja pausar a publicação deste material?"
-                                                                position="top-right"
-                                                                buttonYesText="Sim"
-                                                                buttonNoText="Não"
-                                                            />
-                                                        </section>
-                                                    ) : material.status === "pausado" ? (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleStatusChange(material._id, "publicado")}
-                                                            disabled={String(actionLoading).includes(material._id)}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            {String(actionLoading).includes(material._id) ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Play className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Publicar novamente</TooltipContent>
+                                                        </Tooltip>
                                                     ) : null}
 
                                                     {material.status !== "doado" && (
-                                                        <section>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => { setShowDonated(true)}}
-                                                            disabled={String(actionLoading).includes(material._id)}
-                                                            className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
-                                                        >
-                                                            {String(actionLoading).includes(material._id) ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Check className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
-                                                        <ConfirmToast
-                                                            customFunction={() => handleStatusChange(material._id, "doado")}
-                                                            setShowConfirmToast={setShowDonated}
-                                                            showConfirmToast={showDonated}
-                                                            toastText="Deseja marcar como doado?"
-                                                            position="top-right"
-                                                            buttonYesText="Sim"
-                                                            buttonNoText="Não"
-                                                        />
-                                                        </section>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => openActionConfirmation({ type: "donate", materialId: material._id })}
+                                                                    disabled={actionLoading === material._id}
+                                                                    className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                                                                    aria-label={`Marcar ${material.name} como doado`}
+                                                                >
+                                                                    {actionLoading === material._id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Check className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Marcar como doado</TooltipContent>
+                                                        </Tooltip>
                                                     )}
 
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setShowDelete(true);
-                                                        }}
-                                                        disabled={String(actionLoading).includes(material._id)}
-                                                        className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
-                                                    >
-                                                        {String(actionLoading).includes(material._id) ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                    <ConfirmToast
-                                                        customFunction={() => handleDelete(material._id)}
-                                                        setShowConfirmToast={setShowDelete}
-                                                        showConfirmToast={showDelete}
-                                                        toastText="Deseja excluir este material?"
-                                                        position="top-right"
-                                                        buttonYesText="Sim"
-                                                        buttonNoText="Não"
-                                                    />
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => openActionConfirmation({ type: "delete", materialId: material._id })}
+                                                                disabled={actionLoading === material._id}
+                                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                aria-label={`Excluir ${material.name}`}
+                                                            >
+                                                                {actionLoading === material._id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Excluir</TooltipContent>
+                                                    </Tooltip>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -476,6 +547,15 @@ export default function MaterialsHomePage() {
                     )}
                 </CardContent>
             </Card>
+            <ConfirmToast
+                asModal
+                customFunction={handleConfirmedAction}
+                setShowConfirmToast={setShowActionConfirmation}
+                showConfirmToast={showActionConfirmation}
+                toastText={getConfirmationText()}
+                buttonYesText="Sim"
+                buttonNoText="Não"
+            />
             <ToastContainer />
         </div>
     )

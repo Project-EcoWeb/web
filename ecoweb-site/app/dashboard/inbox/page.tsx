@@ -10,41 +10,18 @@ import { ScrollArea } from "components/ui/scroll-area"
 import { Separator } from "components/ui/separator"
 import { MessageCircle, Calendar, CheckCircle, X, Archive, ExternalLink, Send } from "lucide-react"
 import Link from "next/link"
+import { getMockConversations, type MockConversation, type MockMessage } from "@/lib/dashboardMocks"
 
-interface Message {
-    id: string
-    sender: "company" | "interested"
-    content: string
-    timestamp: string
-    read: boolean
-}
-
-interface Conversation {
-    id: string
-    interestedPartyName: string
-    interestedPartyType: "ong" | "creator" | "individual"
-    materialName: string
-    materialId: string
-    lastMessage: string
-    lastMessageTime: string
-    unreadCount: number
-    status: "active" | "scheduled" | "completed" | "rejected" | "archived"
-    messages: Message[]
-}
+const initialConversations = getMockConversations()
 
 export default function InboxPage() {
     const searchParams = useSearchParams()
     const materialFilter = searchParams.get("material")
 
-    const [conversations, setConversations] = useState<Conversation[]>([])
-    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
+    const [conversations, setConversations] = useState<MockConversation[]>(initialConversations)
+    const [selectedConversation, setSelectedConversation] = useState<MockConversation | null>(initialConversations[0] ?? null)
     const [filter, setFilter] = useState<"all" | "unread" | "archived">("all")
     const [newMessage, setNewMessage] = useState("")
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        fetchConversations()
-    }, [])
 
     useEffect(() => {
         if (materialFilter && conversations.length > 0) {
@@ -55,19 +32,13 @@ export default function InboxPage() {
         }
     }, [materialFilter, conversations])
 
-    const fetchConversations = async () => {
-        try {
-            const response = await fetch("/api/empresa/mensagens")
-            const data = await response.json()
-            setConversations(data)
-            if (data.length > 0 && !selectedConversation && !materialFilter) {
-                setSelectedConversation(data[0])
-            }
-        } catch (error) {
-            console.error("Error fetching conversations:", error)
-        } finally {
-            setLoading(false)
-        }
+    const updateConversation = (updatedConversation: MockConversation) => {
+        setSelectedConversation(updatedConversation)
+        setConversations((current) =>
+            current.map((conversation) =>
+                conversation.id === updatedConversation.id ? updatedConversation : conversation,
+            ),
+        )
     }
 
     const filteredConversations = conversations.filter((conv) => {
@@ -78,100 +49,52 @@ export default function InboxPage() {
         return conv.status !== "archived"
     })
 
-    const sendMessage = async () => {
+    const sendMessage = () => {
         if (!newMessage.trim() || !selectedConversation) return
 
-        try {
-            const response = await fetch(`/api/mensagens/${selectedConversation.id}/reply`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: newMessage }),
-            })
-
-            if (response.ok) {
-                const updatedMessage = await response.json()
-                setSelectedConversation((prev) =>
-                    prev
-                        ? {
-                            ...prev,
-                            messages: [...prev.messages, updatedMessage],
-                        }
-                        : null,
-                )
-                setNewMessage("")
-                fetchConversations() 
-            }
-        } catch (error) {
-            console.error("Error sending message:", error)
+        const message: MockMessage = {
+            id: `demo-mensagem-${Date.now()}`,
+            sender: "company",
+            content: newMessage.trim(),
+            timestamp: "Agora",
+            read: true,
         }
+
+        updateConversation({
+            ...selectedConversation,
+            messages: [...selectedConversation.messages, message],
+            lastMessage: message.content,
+            lastMessageTime: message.timestamp,
+            unreadCount: 0,
+        })
+        setNewMessage("")
     }
 
-    const schedulePickup = async () => {
+    const schedulePickup = () => {
         if (!selectedConversation) return
-
-        try {
-            const response = await fetch(`/api/mensagens/${selectedConversation.id}/schedule`, {
-                method: "POST",
-            })
-
-            if (response.ok) {
-                setSelectedConversation((prev) => (prev ? { ...prev, status: "scheduled" } : null))
-                fetchConversations()
-            }
-        } catch (error) {
-            console.error("Error scheduling pickup:", error)
-        }
+        updateConversation({ ...selectedConversation, status: "scheduled" })
     }
 
-    const confirmDonation = async () => {
+    const confirmDonation = () => {
         if (!selectedConversation) return
-
-        try {
-            const response = await fetch(`/api/mensagens/${selectedConversation.id}/confirm`, {
-                method: "POST",
-            })
-
-            if (response.ok) {
-                setSelectedConversation((prev) => (prev ? { ...prev, status: "completed" } : null))
-                fetchConversations()
-            }
-        } catch (error) {
-            console.error("Error confirming donation:", error)
-        }
+        updateConversation({ ...selectedConversation, status: "completed" })
     }
 
-    const rejectProposal = async () => {
+    const rejectProposal = () => {
         if (!selectedConversation) return
-
-        try {
-            const response = await fetch(`/api/mensagens/${selectedConversation.id}/reject`, {
-                method: "POST",
-            })
-
-            if (response.ok) {
-                setSelectedConversation((prev) => (prev ? { ...prev, status: "rejected" } : null))
-                fetchConversations()
-            }
-        } catch (error) {
-            console.error("Error rejecting proposal:", error)
-        }
+        updateConversation({ ...selectedConversation, status: "rejected" })
     }
 
-    const archiveConversation = async () => {
+    const archiveConversation = () => {
         if (!selectedConversation) return
-
-        try {
-            const response = await fetch(`/api/mensagens/${selectedConversation.id}/archive`, {
-                method: "POST",
-            })
-
-            if (response.ok) {
-                setSelectedConversation(null)
-                fetchConversations()
-            }
-        } catch (error) {
-            console.error("Error archiving conversation:", error)
-        }
+        setConversations((current) =>
+            current.map((conversation) =>
+                conversation.id === selectedConversation.id
+                    ? { ...conversation, status: "archived" }
+                    : conversation,
+            ),
+        )
+        setSelectedConversation(null)
     }
 
     const getStatusBadge = (status: string) => {
@@ -198,22 +121,14 @@ export default function InboxPage() {
         }
     }
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Carregando mensagens...</p>
-                </div>
-            </div>
-        )
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Caixa de Entrada</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-bold tracking-tight">Caixa de Entrada</h1>
+                        <Badge variant="outline">Dados demonstrativos</Badge>
+                    </div>
                     <p className="text-muted-foreground">
                         Gerencie propostas e negocie doações de materiais
                         {materialFilter && (
@@ -317,9 +232,9 @@ export default function InboxPage() {
                                             <p className="text-sm text-muted-foreground">
                                                 sobre o material: {selectedConversation.materialName}
                                             </p>
-                                            <Button variant="ghost" size="sm" className="h-6 px-2">
+                                            <Button variant="ghost" size="sm" className="h-6 px-2" disabled>
                                                 <ExternalLink className="h-3 w-3 mr-1" />
-                                                Ver Anúncio
+                                                Material demonstrativo
                                             </Button>
                                         </div>
                                     </div>
