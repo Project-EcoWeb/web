@@ -82,7 +82,7 @@ export default function ReportsPage() {
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Emissões de CO² Evitadas</CardTitle>
+                                <CardTitle className="text-sm font-medium">Emissões de CO₂ Evitadas</CardTitle>
                                 <Leaf className="h-4 w-4 text-green-600" />
                             </CardHeader>
                             <CardContent>
@@ -178,7 +178,7 @@ export default function ReportsPage() {
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                                 <div className="text-center p-4 bg-green-50 rounded-lg">
                                     <div className="text-2xl font-bold text-green-600">{reportData.co2Evitado}</div>
-                                    <p className="text-sm text-green-700">Toneladas de CO² evitadas</p>
+                                    <p className="text-sm text-green-700">Toneladas de CO₂ evitadas</p>
                                 </div>
                                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                                     <div className="text-2xl font-bold text-blue-600">{Math.round(reportData.co2Evitado * 45)}</div>
@@ -207,7 +207,7 @@ export default function ReportsPage() {
                                 <div className="space-y-2">
                                     <h4 className="font-semibold text-green-600">Environmental (Ambiental)</h4>
                                     <ul className="text-sm text-muted-foreground space-y-1">
-                                        <li>• Redução de {reportData.co2Evitado} ton de CO²</li>
+                                        <li>• Redução de {reportData.co2Evitado} ton de CO₂</li>
                                         <li>• Desvio de {reportData.totalDoado} ton de resíduos</li>
                                         <li>• Promoção da economia circular</li>
                                     </ul>
