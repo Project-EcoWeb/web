@@ -15,6 +15,7 @@ import {
     Trash2,
     Loader2,
     MessageCircle,
+    BarChart3,
     Package,
     TrendingUp,
     Clock,
@@ -25,6 +26,7 @@ import { useAuth } from "@/context/authContext"
 import { getMaterials, deleteMaterialById, updateStatusByMaterialId, getMaterialsByStatusOrName } from "@/services/materialServices"
 import { TypeOptions, Bounce, toast, ToastContainer } from "react-toastify"
 import { ConfirmToast } from 'react-confirm-toast'
+import { getMockReportData, MOCK_DASHBOARD_SUMMARY } from "@/lib/dashboardMocks"
 
 interface Material {
     _id: string
@@ -48,6 +50,8 @@ const statusLabels = {
     pausado: "Pausado",
     doado: "Doado",
 }
+
+const mockReportSummary = getMockReportData("ultimo-trimestre")
 
 export default function MaterialsHomePage() {
     const { token, isLoading } = useAuth();
@@ -199,7 +203,7 @@ export default function MaterialsHomePage() {
                 </div>
 
                 <div className=" flex items-center justify-center">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mx:auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mx:auto">
                         <Card className="border-border/50 bg-card/50 backdrop-blur">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
@@ -221,8 +225,9 @@ export default function MaterialsHomePage() {
                                         <MessageCircle className="h-5 w-5 text-chart-2" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{/*materials.reduce((acc, m) => acc + m.interessados, 0)*/}</p>
-                                        <p className="text-sm text-muted-foreground">Mensagens Recebidas</p>
+                                        <p className="text-2xl font-bold">{MOCK_DASHBOARD_SUMMARY.totalMessages}</p>
+                                        <p className="text-sm text-muted-foreground">Mensagens</p>
+                                        <p className="text-xs text-muted-foreground">Dados demonstrativos</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -237,6 +242,21 @@ export default function MaterialsHomePage() {
                                     <div>
                                         <p className="text-2xl font-bold">{materials.filter((m) => m.status === "doado").length}</p>
                                         <p className="text-sm text-muted-foreground">Doações Realizadas</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-border/50 bg-card/50 backdrop-blur">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-chart-4/10 rounded-lg">
+                                        <BarChart3 className="h-5 w-5 text-chart-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold">{mockReportSummary.co2Evitado} ton</p>
+                                        <p className="text-sm text-muted-foreground">CO² evitado</p>
+                                        <p className="text-xs text-muted-foreground">Dados demonstrativos</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -351,9 +371,9 @@ export default function MaterialsHomePage() {
                                                 {new Date(material.updatedAt).toLocaleDateString("pt-BR")}
                                             </TableCell>
                                             <TableCell>
-                                                {material.interessados > 0 ? (
+                                                {(material.interessados ?? 0) > 0 ? (
                                                     <Button variant="ghost" size="sm" asChild className="h-auto p-0 font-normal">
-                                                        <Link href={`/dashboard/inbox?material=${material._id}`}>
+                                                        <Link href="/dashboard/inbox">
                                                             <div className="flex items-center gap-2 text-primary hover:text-primary/80">
                                                                 <MessageCircle className="h-4 w-4" />
                                                                 <span>{material.interessados} mensagens</span>
@@ -361,7 +381,7 @@ export default function MaterialsHomePage() {
                                                         </Link>
                                                     </Button>
                                                 ) : (
-                                                    <span className="text-muted-foreground">{material.interessados}</span>
+                                                    <span className="text-muted-foreground">0</span>
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right">
