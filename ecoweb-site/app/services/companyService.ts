@@ -12,6 +12,42 @@ export type CompanyData = {
     password: string
 }
 
+export type CompanyProfile = Omit<CompanyData, "password">
+
+export type UpdateCompanyData = CompanyProfile
+
+function requireToken(token: string) {
+    if (!token) {
+        throw new Error("Sua sessão expirou. Faça login novamente.")
+    }
+}
+
+function getRequestErrorMessage(error: unknown, fallbackMessage: string) {
+    if (axios.isAxiosError(error)) {
+        const responseMessage = error.response?.data?.message
+
+        if (typeof responseMessage === "string" && responseMessage.trim()) {
+            const translatedMessages: Record<string, string> = {
+                "company not found": "Instituição não encontrada.",
+                "company with this name already registered": "Já existe uma instituição com este nome.",
+                "company with this email already registered": "Já existe uma instituição com este e-mail.",
+                "company with this cnpj already registered": "Já existe uma instituição com este CNPJ.",
+                "company with this value already registered": "Um dos dados informados já está cadastrado.",
+            }
+
+            return translatedMessages[responseMessage] ?? responseMessage
+        }
+
+        if (!error.response) {
+            return "Não foi possível conectar ao servidor. Tente novamente."
+        }
+    }
+
+    if (error instanceof Error && error.message) return error.message
+
+    return fallbackMessage
+}
+
 
 export async function registerCompany(company: CompanyData) {
     try {
@@ -44,71 +80,40 @@ export async function loginCompany(company: LoginData) {
     }
 }
 
-export async function getCompanyData(token: string) {
+export async function getCompanyData(token: string): Promise<CompanyProfile> {
     try {
+        requireToken(token)
 
-        if(!token) {
-            console.log('Token não fornecido');
-            return;
-        }
-
-        const response = await api.get("institutions/me/profile", {
+        const response = await api.get("/institutions/me/profile", {
             headers: {
                 Authorization: `Bearer ${token}`
             }
-        });
-        
-        if (response.status === 200) {
-            
-            const companyData : CompanyData = {
-                name: response.data.name,
-                cnpj: response.data.cnpj,
-                phone: response.data.phone,
-                location: response.data.location,
-                cep: response.data.cep,
-                email: response.data.email,
-                responsibleName: response.data.responsibleName,
-                password: ""
-            }
+        })
 
-            return companyData;
+        return {
+            name: response.data.name ?? "",
+            cnpj: response.data.cnpj ?? "",
+            phone: response.data.phone ?? "",
+            location: response.data.location ?? "",
+            cep: response.data.cep ?? "",
+            email: response.data.email ?? "",
+            responsibleName: response.data.responsibleName ?? ""
         }
-
-        
-
     } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            console.log(error.response.data.message || 'Falha ao obter dados da empresa');
-        } else {
-            console.log('Erro na conexão com servidor');
-        }
+        throw new Error(getRequestErrorMessage(error, "Falha ao carregar os dados da instituição."))
     }
 }
 
-export async function updateCompanyData(token: string, company: CompanyData) {
+export async function updateCompanyData(token: string, company: UpdateCompanyData): Promise<void> {
     try {
+        requireToken(token)
 
-        if(!token) {
-            console.log('Token não fornecido');
-            return;
-        }
-
-        const response = await api.patch("institutions/", company, {
+        await api.patch("/institutions", company, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
-        });
-
-        if (response.status === 200) {
-            console.log('Dados da empresa atualizados com sucesso');
-            return response;
-        }
-
+        })
     } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            console.log(error.response.data.message || 'Falha ao atualizar dados da empresa');
-        } else {
-            console.log('Erro na conexão com servidor');
-        }
+        throw new Error(getRequestErrorMessage(error, "Falha ao atualizar os dados da instituição."))
     }
 }
