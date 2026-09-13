@@ -1,218 +1,307 @@
 "use client"
 
-import { useState } from "react"
-import DashboardLayout from "../layout"
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
+import { AlertCircle, Building2, Loader2, Pencil, Save } from "lucide-react"
+import { Bounce, toast, ToastContainer } from "react-toastify"
 
-export default function DashboardSettings() {
-    return (
-        <SettingsPageContent />
-    )
+import { useAuth } from "@/context/authContext"
+import {
+    type CompanyProfile,
+    getCompanyData,
+    updateCompanyData,
+} from "@/services/companyService"
+import { Button } from "components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card"
+import { Input } from "components/ui/input"
+import { Label } from "components/ui/label"
+
+const EMPTY_PROFILE: CompanyProfile = {
+    name: "",
+    cnpj: "",
+    phone: "",
+    location: "",
+    cep: "",
+    email: "",
+    responsibleName: "",
 }
 
-function SettingsPageContent() {
+type FormErrors = Partial<Record<keyof CompanyProfile, string>>
+
+const fields: Array<{
+    key: keyof CompanyProfile
+    label: string
+    type?: React.HTMLInputTypeAttribute
+    placeholder: string
+    autoComplete?: string
+    inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+}> = [
+    { key: "name", label: "Nome / Razão Social", placeholder: "Nome da instituição", autoComplete: "organization" },
+    { key: "cnpj", label: "CNPJ", placeholder: "00.000.000/0000-00", inputMode: "numeric" },
+    { key: "responsibleName", label: "Nome do Responsável", placeholder: "Nome completo", autoComplete: "name" },
+    { key: "email", label: "E-mail Corporativo", type: "email", placeholder: "contato@empresa.com", autoComplete: "email" },
+    { key: "phone", label: "Telefone", type: "tel", placeholder: "(00) 00000-0000", autoComplete: "tel", inputMode: "tel" },
+    { key: "cep", label: "CEP", placeholder: "00000-000", autoComplete: "postal-code", inputMode: "numeric" },
+    { key: "location", label: "Endereço", placeholder: "Rua, número, bairro, cidade - UF", autoComplete: "street-address" },
+]
+
+function normalizeProfile(profile: CompanyProfile): CompanyProfile {
+    return Object.fromEntries(
+        Object.entries(profile).map(([key, value]) => [key, value.trim()]),
+    ) as CompanyProfile
+}
+
+function validateProfile(profile: CompanyProfile): FormErrors {
+    const errors: FormErrors = {}
+
+    if (!profile.name) errors.name = "Informe o nome da instituição."
+    if (!profile.responsibleName) errors.responsibleName = "Informe o nome do responsável."
+    if (!/^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/.test(profile.cnpj)) {
+        errors.cnpj = "Informe um CNPJ válido."
+    }
+    if (!/^(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$/.test(profile.phone)) {
+        errors.phone = "Informe um telefone válido com DDD."
+    }
+    if (!/^\d{5}-?\d{3}$/.test(profile.cep)) errors.cep = "Informe um CEP válido."
+    if (!/^\S+@\S+\.\S+$/.test(profile.email)) errors.email = "Informe um e-mail válido."
+    if (!profile.location) errors.location = "Informe o endereço da instituição."
+
+    return errors
+}
+
+export default function DashboardSettings() {
+    const { token, isLoading: isAuthLoading } = useAuth()
+    const [formData, setFormData] = useState<CompanyProfile>(EMPTY_PROFILE)
+    const [savedData, setSavedData] = useState<CompanyProfile | null>(null)
+    const [errors, setErrors] = useState<FormErrors>({})
     const [isEditing, setIsEditing] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [loadError, setLoadError] = useState<string | null>(null)
+    const [reloadKey, setReloadKey] = useState(0)
 
-    const [formData, setFormData] = useState({
-        name: "EcoWeb Soluções Ambientais",
-        cnpj: "12.345.678/0001-99",
-        phone: "(11) 99999-9999",
-        location: "São Paulo, SP",
-        cep: "01000-000",
-        email: "contato@ecoweb.com",
-        responsibleName: "João Silva",
-    })
+    useEffect(() => {
+        if (isAuthLoading) return
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target
-        setFormData((prev) => ({ ...prev, [name]: value }))
+        if (!token) {
+            setIsLoading(false)
+            setLoadError("Sua sessão expirou. Faça login novamente.")
+            return
+        }
+
+        let ignoreResult = false
+        const currentToken = token
+
+        async function loadProfile() {
+            setIsLoading(true)
+            setLoadError(null)
+
+            try {
+                const profile = await getCompanyData(currentToken)
+
+                if (!ignoreResult) {
+                    setFormData(profile)
+                    setSavedData(profile)
+                }
+            } catch (error) {
+                if (!ignoreResult) {
+                    setLoadError(error instanceof Error ? error.message : "Não foi possível carregar o perfil.")
+                }
+            } finally {
+                if (!ignoreResult) setIsLoading(false)
+            }
+        }
+
+        loadProfile()
+
+        return () => {
+            ignoreResult = true
+        }
+    }, [token, isAuthLoading, reloadKey])
+
+    const hasChanges = useMemo(
+        () => savedData !== null && JSON.stringify(formData) !== JSON.stringify(savedData),
+        [formData, savedData],
+    )
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const field = event.target.name as keyof CompanyProfile
+        const value = event.target.value
+
+        setFormData((current) => ({ ...current, [field]: value }))
+        setErrors((current) => ({ ...current, [field]: undefined }))
     }
 
-    const handleSave = () => {
-        console.log("Saving data:", formData)
+    const handleCancel = () => {
+        if (savedData) setFormData(savedData)
+        setErrors({})
         setIsEditing(false)
     }
 
+    const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+
+        if (!token) {
+            toast.error("Sua sessão expirou. Faça login novamente.")
+            return
+        }
+
+        const normalizedData = normalizeProfile(formData)
+        const validationErrors = validateProfile(normalizedData)
+
+        if (Object.keys(validationErrors).length > 0) {
+            setFormData(normalizedData)
+            setErrors(validationErrors)
+            toast.error("Revise os campos destacados antes de salvar.")
+            return
+        }
+
+        setIsSaving(true)
+        const notificationId = toast.loading("Atualizando informações...")
+
+        try {
+            await updateCompanyData(token, normalizedData)
+            setFormData(normalizedData)
+            setSavedData(normalizedData)
+            setErrors({})
+            setIsEditing(false)
+            toast.update(notificationId, {
+                render: "Informações atualizadas com sucesso!",
+                type: "success",
+                isLoading: false,
+                autoClose: 2500,
+            })
+        } catch (error) {
+            toast.update(notificationId, {
+                render: error instanceof Error ? error.message : "Erro ao atualizar as informações.",
+                type: "error",
+                isLoading: false,
+                autoClose: 4000,
+            })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     return (
-        <div className="container max-w-5xl py-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
+        <div className="mx-auto max-w-5xl space-y-8 py-2">
+            <ToastContainer
+                position="top-center"
+                autoClose={2500}
+                closeOnClick
+                pauseOnHover={false}
+                theme="light"
+                transition={Bounce}
+            />
+
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Perfil e configurações</h1>
                 <p className="mt-2 text-muted-foreground">
-                    Aqui você pode gerenciar os dados da empresa, conta e preferências.
+                    Mantenha os dados públicos e de contato da sua instituição atualizados.
                 </p>
             </div>
 
-            <div className="grid gap-8">
-                <section className="p-6 border rounded-xl bg-card shadow-sm">
-                    <div className="flex items-center justify-between mb-6 border-b pb-4">
-                        <div>
-                            <h2 className="text-xl font-semibold">Dados da Empresa</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Informações principais e de contato do seu negócio.
-                            </p>
+            <Card>
+                <CardHeader className="gap-4 border-b sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div className="flex gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Building2 className="h-5 w-5" />
                         </div>
-                        {isEditing ? (
+                        <div>
+                            <CardTitle>Dados da instituição</CardTitle>
+                            <CardDescription className="mt-1">
+                                Estas informações compõem o perfil da sua instituição.
+                            </CardDescription>
+                        </div>
+                    </div>
+
+                    {!isLoading && !loadError && (
+                        isEditing ? (
                             <div className="flex gap-2">
-                                <button
-                                    onClick={() => setIsEditing(false)}
-                                    className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-muted"
-                                >
+                                <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>
                                     Cancelar
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90"
-                                >
-                                    Salvar
-                                </button>
+                                </Button>
+                                <Button type="submit" form="company-profile-form" disabled={isSaving || !hasChanges}>
+                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    {isSaving ? "Salvando..." : "Salvar"}
+                                </Button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="px-4 py-2 border border-primary text-primary rounded-md text-sm font-medium hover:bg-primary/5"
-                            >
-                                Editar Informações
-                            </button>
-                        )}
-                    </div>
+                            <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>
+                                <Pencil className="h-4 w-4" />
+                                Editar informações
+                            </Button>
+                        )
+                    )}
+                </CardHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Nome / Razão Social</label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
+                <CardContent className="pt-6">
+                    {isLoading ? (
+                        <div className="grid gap-6 md:grid-cols-2" aria-label="Carregando dados do perfil">
+                            {Array.from({ length: 7 }).map((_, index) => (
+                                <div key={index} className={index === 6 ? "space-y-2 md:col-span-2" : "space-y-2"}>
+                                    <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+                                    <div className="h-10 animate-pulse rounded-md bg-muted" />
+                                </div>
+                            ))}
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">CNPJ</label>
-                            <input
-                                type="text"
-                                name="cnpj"
-                                value={formData.cnpj}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Nome do Responsável</label>
-                            <input
-                                type="text"
-                                name="responsibleName"
-                                value={formData.responsibleName}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">E-mail Corporativo</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Telefone</label>
-                            <input
-                                type="text"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="col-span-1 space-y-1">
-                                <label className="text-sm font-medium">CEP</label>
-                                <input
-                                    type="text"
-                                    name="cep"
-                                    value={formData.cep}
-                                    onChange={handleChange}
-                                    disabled={!isEditing}
-                                    className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
+                    ) : loadError ? (
+                        <div className="flex flex-col items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
+                            <AlertCircle className="h-8 w-8 text-destructive" />
+                            <div>
+                                <p className="font-medium">Não foi possível carregar o perfil</p>
+                                <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
                             </div>
-                            <div className="col-span-2 space-y-1">
-                                <label className="text-sm font-medium">Localização</label>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                    disabled={!isEditing}
-                                    className="w-full px-3 py-2 border rounded-md bg-transparent disabled:bg-muted/50 disabled:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
+                            <Button type="button" variant="outline" onClick={() => setReloadKey((value) => value + 1)}>
+                                Tentar novamente
+                            </Button>
                         </div>
-                    </div>
-                </section>
+                    ) : (
+                        <form id="company-profile-form" onSubmit={handleSave} noValidate>
+                            <div className="grid gap-6 md:grid-cols-2">
+                                {fields.map((field) => (
+                                    <div key={field.key} className={field.key === "location" ? "space-y-2 md:col-span-2" : "space-y-2"}>
+                                        <Label htmlFor={field.key}>{field.label}</Label>
+                                        <Input
+                                            id={field.key}
+                                            name={field.key}
+                                            type={field.type ?? "text"}
+                                            value={formData[field.key]}
+                                            onChange={handleChange}
+                                            disabled={!isEditing || isSaving}
+                                            placeholder={field.placeholder}
+                                            autoComplete={field.autoComplete}
+                                            inputMode={field.inputMode}
+                                            aria-invalid={Boolean(errors[field.key])}
+                                            aria-describedby={errors[field.key] ? `${field.key}-error` : undefined}
+                                            className={errors[field.key] ? "border-destructive focus-visible:ring-destructive/20" : ""}
+                                        />
+                                        {errors[field.key] && (
+                                            <p id={`${field.key}-error`} className="text-sm text-destructive">
+                                                {errors[field.key]}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </form>
+                    )}
+                </CardContent>
+            </Card>
 
-                <section className="p-6 border rounded-xl bg-card shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 pb-2 border-b">Segurança da Conta</h2>
-                    <div className="space-y-4 divide-y">
-                        <div className="flex items-center justify-between pt-2">
-                            <div className="space-y-0.5">
-                                <p className="font-medium text-sm">Alterar Senha</p>
-                                <p className="text-sm text-muted-foreground">Atualize sua senha de acesso.</p>
-                            </div>
-                            <button className="px-4 py-2 border rounded-md text-sm hover:bg-muted font-medium">Alterar</button>
+            <Card className="opacity-75">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <CardTitle>Mais configurações</CardTitle>
+                            <CardDescription>Segurança, notificações e preferências estarão disponíveis em breve.</CardDescription>
                         </div>
-                        <div className="flex items-center justify-between pt-4">
-                            <div className="space-y-0.5">
-                                <p className="font-medium text-sm">Notificações</p>
-                                <p className="text-sm text-muted-foreground">Gerencie seus alertas por e-mail.</p>
-                            </div>
-                            <button className="px-4 py-2 border rounded-md text-sm hover:bg-muted font-medium">Configurar</button>
-                        </div>
-                        <div className="flex items-center justify-between pt-4">
-                            <div className="space-y-0.5">
-                                <p className="font-medium text-sm">Dispositivos Conectados</p>
-                                <p className="text-sm text-muted-foreground">Gerencie suas sessões ativas.</p>
-                            </div>
-                            <button className="px-4 py-2 border rounded-md text-sm hover:bg-muted font-medium">Gerenciar</button>
-                        </div>
+                        <span className="ml-auto rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                            Em breve
+                        </span>
                     </div>
-                </section>
-
-                <section className="p-6 border rounded-xl bg-card shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 pb-2 border-b">Preferências do Sistema</h2>
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <p className="font-medium text-sm">Tema do Painel</p>
-                                <p className="text-sm text-muted-foreground">Escolha a aparência da interface.</p>
-                            </div>
-                            <select className="px-4 py-2 border rounded-md text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                <option>Claro</option>
-                                <option>Escuro</option>
-                                <option>Automático</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <p className="font-medium text-sm">Idioma</p>
-                                <p className="text-sm text-muted-foreground">Idioma de exibição do painel.</p>
-                            </div>
-                            <select className="px-4 py-2 border rounded-md text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                <option>Português</option>
-                                <option>Inglês</option>
-                                <option>Espanhol</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-            </div>
+                </CardHeader>
+            </Card>
         </div>
     )
 }
