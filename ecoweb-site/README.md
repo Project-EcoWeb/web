@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EcoWeb Web
 
-## Getting Started
+Interface web do EcoWeb para cadastro e gerenciamento de materiais reutilizáveis, perfil institucional, mensagens demonstrativas e indicadores de impacto.
 
-First, run the development server:
+## Tecnologias
+
+- Next.js 16 e React 18
+- TypeScript
+- Tailwind CSS
+- Axios
+- Recharts
+
+## Requisitos
+
+Escolha uma das formas de execução:
+
+- Node.js 22 e npm; ou
+- Docker Engine com Docker Compose v2.
+
+A API EcoWeb deve estar acessível pelo navegador. Em desenvolvimento local, o endereço padrão considerado é `http://localhost:3333`.
+
+## Variáveis de ambiente
+
+Crie o arquivo local a partir do exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Variável disponível:
+
+| Variável | Obrigatória | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API` | Sim | `http://localhost:3333` | URL pública da API usada pelo navegador. |
+
+Por ser uma variável `NEXT_PUBLIC_*`, seu valor é incorporado ao bundle durante o build. Ao alterar a URL da API, reconstrua a aplicação ou a imagem Docker.
+
+## Executar com Docker Compose
+
+Com a API disponível em `http://localhost:3333`:
+
+```bash
+docker compose up --build
+```
+
+Acesse [http://localhost:3000](http://localhost:3000).
+
+Para executar em segundo plano:
+
+```bash
+docker compose up --build -d
+```
+
+Para acompanhar os logs:
+
+```bash
+docker compose logs -f web
+```
+
+Para encerrar e remover o container:
+
+```bash
+docker compose down
+```
+
+### Personalizar portas e API
+
+As variáveis podem ser informadas no comando:
+
+```bash
+NEXT_PUBLIC_API=https://api.exemplo.com WEB_PORT=8080 docker compose up --build
+```
+
+Nesse exemplo, o site fica disponível em `http://localhost:8080`.
+
+> `NEXT_PUBLIC_API` precisa ser uma URL acessível pelo navegador do usuário. Não use um nome interno do Compose, como `http://api:3333`, para uma aplicação acessada fora da rede Docker.
+
+## Executar diretamente com Docker
+
+Construir a imagem:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API=http://localhost:3333 \
+  -t ecoweb-web .
+```
+
+Executar o container:
+
+```bash
+docker run --rm -p 3000:3000 --name ecoweb-web ecoweb-web
+```
+
+A imagem usa build multi-stage, executa o servidor standalone do Next.js e roda com um usuário sem privilégios de root.
+
+## Executar sem Docker
+
+Instale as dependências:
+
+```bash
+npm ci
+```
+
+Inicie o ambiente de desenvolvimento:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000). As alterações no código são recarregadas automaticamente.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Para simular a execução de produção:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Inicia o Next.js em modo de desenvolvimento. |
+| `npm run build` | Gera o build otimizado de produção. |
+| `npm start` | Executa um build de produção existente. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estrutura principal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+app/
+├── context/        # Autenticação e estado compartilhado
+├── dashboard/      # Painel empresarial
+├── services/       # Integração HTTP com a API
+└── page.tsx        # Página inicial
+components/
+└── ui/             # Componentes visuais reutilizáveis
+public/             # Arquivos estáticos
+Dockerfile          # Build da imagem de produção
+docker-compose.yml  # Execução local do frontend
+```
 
-## Deploy on Vercel
+## Integração com a API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+O frontend envia o token de autenticação no header `Authorization: Bearer <token>`. Rotas sob `/dashboard` também são protegidas pelo middleware do Next.js e redirecionam sessões não autenticadas para `/login`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+O arquivo Compose deste repositório executa somente o frontend. A API e o MongoDB devem ser iniciados pelo repositório da API ou por uma infraestrutura externa.
+
+## Verificação
+
+Antes de enviar alterações:
+
+```bash
+npx tsc --noEmit
+npm run build
+```
